@@ -1,0 +1,8 @@
+[user]
+	email = ejelome@gmail.com
+	name = ejelome
+[color "status"]
+	branch = magenta
+	untracked = cyan
+	unmerged = yellow
+	header = white
