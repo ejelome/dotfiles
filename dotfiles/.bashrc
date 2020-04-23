@@ -74,3 +74,6 @@ if [ -f /usr/lib/bash-git-prompt/gitprompt.sh ]; then
   # GIT_PROMPT_THEME=Default_Arch
   source /usr/lib/bash-git-prompt/gitprompt.sh
 fi
+
+# Keychain
+eval $(keychain --eval -q id_rsa)
