@@ -1,0 +1,76 @@
+! Enable perl extensions
+URxvt.perl-ext-common: default,vtwheel,clipboard,matcher,tabbed
+
+! Cut and paste
+URxvt.keysym.C-C: perl:clipboard:copy
+URxvt.keysym.C-V: perl:clipboard:paste
+
+! Disable default cut and paste
+URxvt.keysym.C-M-c: builtin-string:
+URxvt.keysym.C-M-v: builtin-string:
+
+! Disable URxvt ISO mode
+URxvt.iso14755: false
+URxvt.iso14755_52: false
+
+! Clickable URLs
+URxvt.url-launcher: /usr/bin/xdg-open
+URxvt.matcher.button: 1
+URxvt.matcher.rend.0: Uline fg6
+
+! Simple tabs
+URxvt.tabbed.tabbar-fg: 2
+URxvt.tabbed.tabbar-bg: 0
+URxvt.tabbed.tab-fg: 3
+URxvt.tabbed.tab-bg: 0
+
+! Native transparency
+URxvt*inheritPixmap: true
+URxvt*transparent: true
+! URxvt*shading: 0 to 99 darkens, 101 to 200 lightens
+URxvt*shading: 20
+
+! Color Scheme
+! special
+*.foreground: #f4f4f4
+*.background: #111111
+*.cursorColor: #eeeeee
+*.cursorColor2: #111111
+! black
+*.color0: #263640
+*.color8: #4a697d
+! red
+*.color1: #d12f2c
+*.color9: #fa3935
+! green
+*.color2: #819400
+*.color10: #a4bd00
+! yellow
+*.color3: #b08500
+*.color11: #d9a400
+! blue
+*.color4: #2587cc
+*.color12: #2ca2f5
+! magenta
+*.color5: #696ebf
+*.color13: #8086e8
+! cyan
+*.color6: #289c93
+*.color14: #33c5ba
+! white
+*.color7: #bfbaac
+*.color15: #F4F4F4
+
+! Scrollbar
+! scrollbar width
+URxvt*thickness: 10
+! scrollbar color
+URxvt*scrollColor: #1E1E1E
+! scrollbar trough area color
+!URxvt*troughColor: #333333
+! scrollbar without a trough
+!URxvt*scrollBar_floating: false
+! scrollbar to the right
+URxvt*scrollBar_right: true
+! scrollbar style
+URxvt*scrollstyle: plain
