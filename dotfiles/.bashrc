@@ -77,3 +77,8 @@ fi
 
 # Keychain
 eval $(keychain --eval -q id_rsa)
+
+# GNU Screen
+if [[ -z "$STY" ]]; then
+   screen -xRR session_name
+fi
