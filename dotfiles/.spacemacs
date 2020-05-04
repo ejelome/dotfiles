@@ -33,18 +33,38 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     emberjs
+     prettier
+     (html :variables
+           html-enable-lsp t
+           css-enable-lsp t
+           web-fmt-tool 'prettier)
+     import-js
+     (javascript :variables
+                 javascript-backend 'lsp
+                 javascript-repl `nodejs
+                 javascript-import-tool 'import-js
+                 javascript-fmt-tool 'prettier
+                 javascript-fmt-on-save t)
+     helpful
+     (ibuffer :variables
+              ibuffer-group-buffers-by 'projects)
+     imenu-list
+     themes-megapack
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
      ;; `M-m f e R' (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      ;; auto-completion
-     ;; better-defaults
+     better-defaults
      emacs-lisp
-     ;; git
+     (git :variables
+          git-magit-status-fullscreen t)
      helm
      ;; lsp
-     ;; markdown
+     (markdown :variables
+               markdown-live-preview-engine 'vmd)
      multiple-cursors
      ;; org
      ;; (shell :variables
@@ -53,7 +73,9 @@ This function should only modify configuration layer settings."
      ;; spell-checking
      ;; syntax-checking
      ;; version-control
-     treemacs
+     (treemacs :variables
+               treemacs-use-git-mode 'deferred
+               treemacs-lock-width t)
      )
 
    ;; List of additional packages that will be installed without being
@@ -63,7 +85,7 @@ This function should only modify configuration layer settings."
    ;; To use a local version of a package, use the `:location' property:
    ;; '(your-package :location "~/path/to/your-package/")
    ;; Also include the dependencies as they will not be resolved automatically.
-   dotspacemacs-additional-packages '()
+   dotspacemacs-additional-packages '(xclip)
 
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
@@ -193,7 +215,8 @@ It should only modify the values of Spacemacs settings."
    ;; List of themes, the first of the list is loaded when spacemacs starts.
    ;; Press `SPC T n' to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
-   dotspacemacs-themes '(spacemacs-dark
+   dotspacemacs-themes '(monokai
+                         spacemacs-dark
                          spacemacs-light)
 
    ;; Set the theme for the Spaceline. Supported themes are `spacemacs',
@@ -365,7 +388,7 @@ It should only modify the values of Spacemacs settings."
    ;;   :size-limit-kb 1000)
    ;; When used in a plist, `visual' takes precedence over `relative'.
    ;; (default nil)
-   dotspacemacs-line-numbers nil
+   dotspacemacs-line-numbers t
 
    ;; Code folding method. Possible values are `evil' and `origami'.
    ;; (default 'evil)
@@ -433,7 +456,7 @@ It should only modify the values of Spacemacs settings."
    ;; `trailing' to delete only the whitespace at end of lines, `changed' to
    ;; delete only whitespace for changed lines or `nil' to disable cleanup.
    ;; (default nil)
-   dotspacemacs-whitespace-cleanup nil
+   dotspacemacs-whitespace-cleanup 'all
 
    ;; If non nil activate `clean-aindent-mode' which tries to correct
    ;; virtual indentation of simple modes. This can interfer with mode specific
@@ -449,7 +472,10 @@ It should only modify the values of Spacemacs settings."
    ;; Run `spacemacs/prettify-org-buffer' when
    ;; visiting README.org files of Spacemacs.
    ;; (default nil)
-   dotspacemacs-pretty-docs nil))
+   dotspacemacs-pretty-docs nil
+
+   ;; Truncate lines.
+   truncate-lines t))
 
 (defun dotspacemacs/user-env ()
   "Environment variables setup.
@@ -480,7 +506,16 @@ This function is called at the very end of Spacemacs startup, after layer
 configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
-  )
+  ;; xclip:
+  (require 'xclip)
+  (xclip-mode 1)
+
+  ;; ember
+  (setq
+   backup-directory-alist `((".*" . ,temporary-file-directory))
+   auto-save-file-name-transforms `((".*" ,temporary-file-directory t))
+   create-lockfiles nil
+   ember-completion-system 'helm))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
