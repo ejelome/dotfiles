@@ -141,3 +141,14 @@ cdnvm() {
 }
 
 alias cd='cdnvm'
+
+# xrandr
+IN='eDP1'
+EX='DP2'
+DIR='left'
+xrandr --output $IN  \
+       --auto        \
+       --primary     \
+       --output $EX  \
+       --auto        \
+       --$DIR-of $IN
