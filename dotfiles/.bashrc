@@ -152,3 +152,14 @@ xrandr --output $IN  \
        --output $EX  \
        --auto        \
        --$DIR-of $IN
+
+# Preserve last working directory:
+LWD_PATH='/tmp/lwd'
+
+function cd_() {
+    cd "$@"; echo "$PWD" > "$LWD_PATH"
+}
+
+alias cd='cd_'
+
+[[ -f "$LWD_PATH" ]] && cd $(< $LWD_PATH)
