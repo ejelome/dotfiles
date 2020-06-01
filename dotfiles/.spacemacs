@@ -51,12 +51,15 @@ This function should only modify configuration layer settings."
               ibuffer-group-buffers-by 'projects)
      imenu-list
      themes-megapack
+     (clojure :variables
+              clojure-enable-fancify-symbols t
+              clojure-enable-linters '(clj-kondo joker))
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
      ;; `M-m f e R' (Emacs style) to install them.
      ;; ----------------------------------------------------------------
-     ;; auto-completion
+     auto-completion
      better-defaults
      emacs-lisp
      (git :variables
@@ -71,7 +74,7 @@ This function should only modify configuration layer settings."
      ;;        shell-default-height 30
      ;;        shell-default-position 'bottom)
      ;; spell-checking
-     ;; syntax-checking
+     syntax-checking
      ;; version-control
      (treemacs :variables
                treemacs-use-git-mode 'deferred
@@ -497,8 +500,8 @@ If you are unsure, try setting them in `dotspacemacs/user-config' first."
   "Library to load while dumping.
 This function is called only while dumping Spacemacs configuration. You can
 `require' or `load' the libraries of your choice that will be included in the
-dump."
-  )
+dump.")
+
 
 (defun dotspacemacs/user-config ()
   "Configuration for user code:
@@ -506,7 +509,7 @@ This function is called at the very end of Spacemacs startup, after layer
 configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
-  ;; xclip:
+  ;; xclip
   (require 'xclip)
   (xclip-mode 1)
 
@@ -515,7 +518,11 @@ before packages are loaded."
    backup-directory-alist `((".*" . ,temporary-file-directory))
    auto-save-file-name-transforms `((".*" ,temporary-file-directory t))
    create-lockfiles nil
-   ember-completion-system 'helm))
+   ember-completion-system 'helm)
+
+  ;; clojure
+  (spacemacs/toggle-evil-safe-lisp-structural-editing-on-register-hook-clojure-mode))
+
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
