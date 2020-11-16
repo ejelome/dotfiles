@@ -2,8 +2,6 @@
 # ~/.bashrc
 #
 
-[[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
-
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
@@ -62,25 +60,25 @@ PATH="${HOME}/bin:${HOME}/.local/bin:${PATH}"
 # Set prompt
 PS1="${Yellow}\u@\h${NC}: ${Blue}\w${NC} \\$ "
 
-# GNU nano
+# nano
 export VISUAL=nano
 export EDITOR="$VISUAL"
 
-# Git
-if [ -f /usr/lib/bash-git-prompt/gitprompt.sh ]; then
-  # To only show the git prompt in or under a repository directory
-  GIT_PROMPT_ONLY_IN_REPO=1
-  # To use upstream's default theme
-  GIT_PROMPT_THEME=Default
-  # To use upstream's default theme, modified by arch maintainer
-  # GIT_PROMPT_THEME=Default_Arch
-  source /usr/lib/bash-git-prompt/gitprompt.sh
-fi
+# git-bash-prompt
+# if [ -f /usr/lib/bash-git-prompt/gitprompt.sh ]; then
+#   # To only show the git prompt in or under a repository directory
+#   GIT_PROMPT_ONLY_IN_REPO=1
+#   # To use upstream's default theme
+#   GIT_PROMPT_THEME=Default
+#   # To use upstream's default theme, modified by arch maintainer
+#   # GIT_PROMPT_THEME=Default_Arch
+#   source /usr/lib/bash-git-prompt/gitprompt.sh
+# fi
 
-# Keychain
+# keychain
 eval $(keychain --eval -q id_rsa)
 
-# GNU Screen
+# screen
 if [[ -z "$STY" ]]; then
    screen -xRR session_name
 fi
@@ -88,7 +86,7 @@ fi
 # nvm
 . /usr/share/nvm/init-nvm.sh
 
-# nvm (auto nvm-use)
+# nvm-use
 find-up() {
     path=$(pwd)
     while [[ "$path" != "" && ! -e "$path/$1" ]]; do
@@ -96,6 +94,9 @@ find-up() {
     done
     echo "$path"
 }
+
+# emacs
+alias emacs='emacs -nw'
 
 cdnvm() {
     cd "$@";
@@ -142,7 +143,18 @@ cdnvm() {
 
 alias cd='cdnvm'
 
-# xrandr
+# Last working directory:
+LWD_PATH='/tmp/lwd'
+
+function cd_() {
+    cd "$@"; echo "$PWD" > "$LWD_PATH"
+}
+
+alias cd='cd_'
+
+[[ -f "$LWD_PATH" ]] && cd $(< $LWD_PATH)
+
+# Dual monitor:
 IN='eDP1'
 EX='DP2'
 DIR='left'
@@ -153,13 +165,11 @@ xrandr --output $IN  \
        --auto        \
        --$DIR-of $IN
 
-# Preserve last working directory:
-LWD_PATH='/tmp/lwd'
-
-function cd_() {
-    cd "$@"; echo "$PWD" > "$LWD_PATH"
+# powerline-shell
+function _update_ps1() {
+    PS1=$(powerline-shell $?)
 }
 
-alias cd='cd_'
-
-[[ -f "$LWD_PATH" ]] && cd $(< $LWD_PATH)
+if [[ $TERM != linux && ! $PROMPT_COMMAND =~ _update_ps1 ]]; then
+    PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
+fi

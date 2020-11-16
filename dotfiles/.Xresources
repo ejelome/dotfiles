@@ -5,10 +5,6 @@ URxvt.perl-ext-common: default,vtwheel,clipboard,matcher,tabbed
 URxvt.keysym.C-C: perl:clipboard:copy
 URxvt.keysym.C-V: perl:clipboard:paste
 
-! Disable default cut and paste
-URxvt.keysym.C-M-c: builtin-string:
-URxvt.keysym.C-M-v: builtin-string:
-
 ! Disable URxvt ISO mode
 URxvt.iso14755: false
 URxvt.iso14755_52: false
@@ -25,10 +21,10 @@ URxvt.tabbed.tab-fg: 3
 URxvt.tabbed.tab-bg: 0
 
 ! Native transparency
-URxvt*inheritPixmap: true
-URxvt*transparent: true
+!URxvt*inheritPixmap: true
+!URxvt*transparent: true
 ! URxvt*shading: 0 to 99 darkens, 101 to 200 lightens
-URxvt*shading: 20
+!URxvt*shading: 20
 
 ! Color Scheme
 ! special
@@ -74,3 +70,7 @@ URxvt*scrollColor: #1E1E1E
 URxvt*scrollBar_right: true
 ! scrollbar style
 URxvt*scrollstyle: plain
+
+! Font
+URxvt*font:xft: Source Code Pro Medium:size=10
+URxvt.letterSpace: 1
