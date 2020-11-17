@@ -33,6 +33,33 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     (git :variables
+          git-magit-status-fullscreen t)
+     (yaml :variables
+           yaml-enable-lsp t)
+     (markdown :variables
+               markdown-live-preview-engine 'vmd)
+     prettier
+     (html :variables
+           html-enable-lsp t
+           css-enable-lsp t
+           web-fmt-tool 'prettier)
+     import-js
+     (javascript :variables
+                 js2-mode-show-strict-warnings nil
+                 javascript-import-tool 'import-js
+                 javascript-backend 'lsp
+                 javascript-lsp-linter nil
+                 javascript-fmt-tool 'prettier
+                 javascript-fmt-on-save t)
+     react
+     imenu-list
+     (ibuffer :variables
+              ibuffer-group-buffers-by 'projects)
+     (better-defaults :variables
+                      better-defaults-move-to-beginning-of-code-first t
+                      better-defaults-move-to-end-of-code-first t)
+     themes-megapack
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
@@ -211,7 +238,8 @@ It should only modify the values of Spacemacs settings."
    ;; List of themes, the first of the list is loaded when spacemacs starts.
    ;; Press `SPC T n' to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
-   dotspacemacs-themes '(spacemacs-dark
+   dotspacemacs-themes '(monokai
+                         spacemacs-dark
                          spacemacs-light)
 
    ;; Set the theme for the Spaceline. Supported themes are `spacemacs',
@@ -480,8 +508,8 @@ It should only modify the values of Spacemacs settings."
    ;; and todos. If non nil only the file name is shown.
    dotspacemacs-home-shorten-agenda-source nil
 
-  ;; Truncate lines.
-  truncate-lines t))
+   ;; Truncate lines.
+   truncate-lines t))
 
 (defun dotspacemacs/user-env ()
   "Environment variables setup.
@@ -512,10 +540,24 @@ This function is called at the very end of Spacemacs startup, after layer
 configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
+  ;; screenrc (escape key)
+  (global-unset-key (kbd "C-j"))
+
   ;; xclip
   (require 'xclip)
   (xclip-mode 1)
-  )
+
+  ;; prettier
+  (add-hook 'before-save-hook 'prettier-js)
+
+  ;; git
+  (global-git-commit-mode t)
+
+  ;; dumb-jump
+  (global-set-key (kbd "M-m j g") 'dumb-jump-go)
+  (global-set-key (kbd "M-m j o") 'dumb-jump-go-other-window)
+  (global-set-key (kbd "M-m j b") 'dumb-jump-back)
+  (global-set-key (kbd "M-m j q") 'dumb-jump-quick-look))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
