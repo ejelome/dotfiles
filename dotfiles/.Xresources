@@ -20,11 +20,11 @@ URxvt.tabbed.tabbar-bg: 0
 URxvt.tabbed.tab-fg: 3
 URxvt.tabbed.tab-bg: 0
 
-! Native transparency
-!URxvt*inheritPixmap: true
-!URxvt*transparent: true
-! URxvt*shading: 0 to 99 darkens, 101 to 200 lightens
-!URxvt*shading: 20
+! ! Native transparency
+! URxvt*inheritPixmap: true
+! URxvt*transparent: true
+! ! URxvt*shading: 0 to 99 darkens, 101 to 200 lightens
+! URxvt*shading: 20
 
 ! Color Scheme
 ! special

@@ -60,6 +60,9 @@ PATH="${HOME}/bin:${HOME}/.local/bin:${PATH}"
 # Set prompt
 PS1="${Yellow}\u@\h${NC}: ${Blue}\w${NC} \\$ "
 
+# keychain
+eval $(keychain --eval -q id_rsa)
+
 # nano
 export VISUAL=nano
 export EDITOR="$VISUAL"
@@ -75,13 +78,13 @@ export EDITOR="$VISUAL"
 #   source /usr/lib/bash-git-prompt/gitprompt.sh
 # fi
 
-# keychain
-eval $(keychain --eval -q id_rsa)
-
 # screen
 if [[ -z "$STY" ]]; then
    screen -xRR session_name
 fi
+
+# screen (fix color scheme)
+export TERM=xterm-256color
 
 # nvm
 . /usr/share/nvm/init-nvm.sh
@@ -94,9 +97,6 @@ find-up() {
     done
     echo "$path"
 }
-
-# emacs
-alias emacs='emacs -nw'
 
 cdnvm() {
     cd "$@";
@@ -143,6 +143,9 @@ cdnvm() {
 
 alias cd='cdnvm'
 
+# emacs
+alias emacs='emacs -nw'
+
 # Last working directory:
 LWD_PATH='/tmp/lwd'
 
@@ -153,17 +156,6 @@ function cd_() {
 alias cd='cd_'
 
 [[ -f "$LWD_PATH" ]] && cd $(< $LWD_PATH)
-
-# Dual monitor:
-IN='eDP1'
-EX='DP2'
-DIR='left'
-xrandr --output $IN  \
-       --auto        \
-       --primary     \
-       --output $EX  \
-       --auto        \
-       --$DIR-of $IN
 
 # powerline-shell
 function _update_ps1() {
