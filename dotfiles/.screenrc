@@ -21,4 +21,4 @@ altscreen on
 
 # use X scrolling
 # > Use mouse scrolling instead of `ctrl+a [`
-termcapinfo xterm* ti@:te@
+termcapinfo rxvt* ti@:te@
