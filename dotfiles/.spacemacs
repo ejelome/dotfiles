@@ -557,7 +557,12 @@ before packages are loaded."
   (global-set-key (kbd "M-m j g") 'dumb-jump-go)
   (global-set-key (kbd "M-m j o") 'dumb-jump-go-other-window)
   (global-set-key (kbd "M-m j b") 'dumb-jump-back)
-  (global-set-key (kbd "M-m j q") 'dumb-jump-quick-look))
+  (global-set-key (kbd "M-m j q") 'dumb-jump-quick-look)
+
+  ;; projectile
+  (require 'projectile)
+  (setq projectile-globally-ignored-directories
+        (append '("node_modules") projectile-globally-ignored-directories)))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
