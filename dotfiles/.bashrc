@@ -80,7 +80,7 @@ export EDITOR="$VISUAL"
 
 # screen
 if [[ -z "$STY" ]]; then
-   screen -xRR session_name
+    screen -xRR session_name
 fi
 
 # screen (fix color scheme)
@@ -165,3 +165,15 @@ function _update_ps1() {
 if [[ $TERM != linux && ! $PROMPT_COMMAND =~ _update_ps1 ]]; then
     PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 fi
+
+# shutdown
+function shutdown_() {
+    [[ -d ~/.emacs.d/.cache/ ]] && rm -rf ~/.emacs.d/.cache/
+    [[ -d ~/.cache/ ]] && rm -rf ~/.cache/
+    [[ -f ~/.bash_profile ]] && history -c
+    sudo pacman -Rns $(pacman -Qqdt)
+    yay
+    shutdown "$@"
+}
+
+alias shutdown='shutdown_'
