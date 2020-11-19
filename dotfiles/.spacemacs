@@ -33,6 +33,7 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     shell
      (git :variables
           git-magit-status-fullscreen t)
      (yaml :variables
@@ -562,7 +563,9 @@ before packages are loaded."
   ;; projectile
   (require 'projectile)
   (setq projectile-globally-ignored-directories
-        (append '("node_modules") projectile-globally-ignored-directories)))
+        (append '(
+                  "node_modules"
+                  "coverage") projectile-globally-ignored-directories)))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
