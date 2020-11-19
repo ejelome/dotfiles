@@ -33,7 +33,8 @@ This function should only modify configuration layer settings."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
-     shell
+     (shell :variables
+            shell-default-shell 'shell)
      (git :variables
           git-magit-status-fullscreen t)
      (yaml :variables
