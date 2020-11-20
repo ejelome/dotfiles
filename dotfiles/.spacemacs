@@ -566,7 +566,10 @@ before packages are loaded."
   (setq projectile-globally-ignored-directories
         (append '(
                   "node_modules"
-                  "coverage") projectile-globally-ignored-directories)))
+                  "coverage") projectile-globally-ignored-directories))
+
+  ;; prevent creation of .# files:
+  (setq create-lockfiles nil))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
