@@ -170,9 +170,10 @@ fi
 function shutdown_() {
     [[ -d ~/.emacs.d/.cache/ ]] && rm -rf ~/.emacs.d/.cache/
     [[ -d ~/.cache/ ]] && rm -rf ~/.cache/!(Cypress)
-    [[ -f ~/.bash_profile ]] && history -c
+    [[ -f ~/.bash_history ]] && rm ~/.bash_history
+    history -c
     sudo pacman -Rns $(pacman -Qqdt)
-    yay
+    yay --noconfirm
     shutdown "$@"
 }
 
