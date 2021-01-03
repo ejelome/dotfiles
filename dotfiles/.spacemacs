@@ -573,6 +573,8 @@ before packages are loaded."
   ;; xclip
   (require 'xclip)
   (xclip-mode 1)
+
+  ;; starship
   (add-to-list 'exec-path "/usr/local/bin")
 
   ;; screenrc (escape key)
