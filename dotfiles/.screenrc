@@ -10,7 +10,7 @@ escape ^Jj
 #   - highlighted for current (`[<window_number> <window_name>]`)
 #   - non-highlighted for non-current (`<window_number>-$ <window_name>`)
 backtick 1 5 5 true
-termcapinfo rxvt* 'hs:ts=\E]2;:fs=\007:ds=\E]2;\007'
+termcapinfo xterm* 'hs:ts=\E]2;:fs=\007:ds=\E]2;\007'
 hardstatus string "screen (%n: %t)"
 caption string "%{= kw}%Y-%m-%d %c %{= kw}%-Lw%{= kG}%{+b}[%n %t]%{-b}%{= kw}%+Lw%1`"
 caption always
@@ -21,4 +21,8 @@ altscreen on
 
 # use X scrolling
 # > Use mouse scrolling instead of `ctrl+a [`
-termcapinfo rxvt* ti@:te@
+termcapinfo xterm* ti@:te@
+
+# treat shell as a login shell
+# > screen will source the same rc file from origin shell
+shell -$SHELL
