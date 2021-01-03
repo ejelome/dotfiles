@@ -1,8 +1,8 @@
 [user]
 	email = ejelome@gmail.com
 	name = ejelome
+[core]
 	editor = nano
-
 [color "status"]
 	branch = magenta
 	untracked = cyan
