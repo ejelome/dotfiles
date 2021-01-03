@@ -34,7 +34,11 @@ This function should only modify configuration layer settings."
    dotspacemacs-configuration-layers
    '(
      (shell :variables
-            shell-default-term-shell "/bin/bash")
+            shell-default-term-shell "/bin/bash"
+            shell-default-shell 'vterm
+            shell-default-full-span nil
+            close-window-with-terminal t
+            spacemacs-vterm-history-file-location "~/.bash_history")
      (git :variables
           git-magit-status-fullscreen t)
      github
