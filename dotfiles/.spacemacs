@@ -34,9 +34,10 @@ This function should only modify configuration layer settings."
    dotspacemacs-configuration-layers
    '(
      (shell :variables
-            shell-default-shell 'shell)
+            shell-default-term-shell "/bin/bash")
      (git :variables
           git-magit-status-fullscreen t)
+     github
      (yaml :variables
            yaml-enable-lsp t)
      (markdown :variables
@@ -54,7 +55,6 @@ This function should only modify configuration layer settings."
                  javascript-lsp-linter nil
                  javascript-fmt-tool 'prettier
                  javascript-fmt-on-save t)
-     react
      imenu-list
      (ibuffer :variables
               ibuffer-group-buffers-by 'projects)
@@ -74,7 +74,8 @@ This function should only modify configuration layer settings."
      helm
      ;; lsp
      ;; markdown
-     multiple-cursors
+     (multiple-cursors :variables
+                       multiple-cursors-backend 'mc)
      ;; org
      ;; (shell :variables
      ;;        shell-default-height 30
@@ -82,8 +83,9 @@ This function should only modify configuration layer settings."
      ;; spell-checking
      ;; syntax-checking
      ;; version-control
-     treemacs)
-
+     (treemacs :variables
+               treemacs-use-git-mode 'deferred
+               treemacs-lock-width t))
 
    ;; List of additional packages that will be installed without being wrapped
    ;; in a layer (generally the packages are installed only and should still be
@@ -93,7 +95,7 @@ This function should only modify configuration layer settings."
    ;; `dotspacemacs/user-config'. To use a local version of a package, use the
    ;; `:location' property: '(your-package :location "~/path/to/your-package/")
    ;; Also include the dependencies as they will not be resolved automatically.
-   dotspacemacs-additional-packages '(xclip)
+   dotspacemacs-additional-packages '(xclip exec-path-from-shell)
 
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
@@ -257,9 +259,11 @@ It should only modify the values of Spacemacs settings."
    ;; (default t)
    dotspacemacs-colorize-cursor-according-to-state t
 
-   ;; Default font or prioritized list of fonts.
-   dotspacemacs-default-font '("Source Code Pro"
-                               :size 10.0
+   ;; Default font or prioritized list of fonts. The `:size' can be specified as
+   ;; a non-negative integer (pixel size), or a floating-point (point size).
+   ;; Point size is recommended, because it's device independent. (default 10.0)
+   dotspacemacs-default-font '("Hack Nerd Font Mono"
+                               :size 11.0
                                :weight normal
                                :width normal)
 
@@ -542,24 +546,12 @@ This function is called at the very end of Spacemacs startup, after layer
 configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
-  ;; screenrc (escape key)
-  (global-unset-key (kbd "C-j"))
+  ;; exec-path-from-shell (load envvars in GUI emacs)
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize))
 
-  ;; xclip
-  (require 'xclip)
-  (xclip-mode 1)
-
-  ;; prettier
-  (add-hook 'before-save-hook 'prettier-js)
-
-  ;; git
-  (global-git-commit-mode t)
-
-  ;; dumb-jump
-  (global-set-key (kbd "M-m j g") 'dumb-jump-go)
-  (global-set-key (kbd "M-m j o") 'dumb-jump-go-other-window)
-  (global-set-key (kbd "M-m j b") 'dumb-jump-back)
-  (global-set-key (kbd "M-m j q") 'dumb-jump-quick-look)
+  ;; prevent creation of .# files
+  (setq create-lockfiles nil)
 
   ;; projectile
   (require 'projectile)
@@ -568,8 +560,28 @@ before packages are loaded."
                   "node_modules"
                   "coverage") projectile-globally-ignored-directories))
 
-  ;; prevent creation of .# files:
-  (setq create-lockfiles nil))
+  ;; dumb-jump
+  (global-set-key (kbd "M-m j g") 'dumb-jump-go)
+  (global-set-key (kbd "M-m j o") 'dumb-jump-go-other-window)
+  (global-set-key (kbd "M-m j b") 'dumb-jump-back)
+  (global-set-key (kbd "M-m j q") 'dumb-jump-quick-look)
+
+  ;; xclip
+  (require 'xclip)
+  (xclip-mode 1)
+  (add-to-list 'exec-path "/usr/local/bin")
+
+  ;; screenrc (escape key)
+  (global-unset-key (kbd "C-j"))
+
+  ;; treemacs on startup
+  (treemacs)
+
+  ;; git
+  (global-git-commit-mode t)
+
+  ;; prettier
+  (add-hook 'before-save-hook 'prettier-js))
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
