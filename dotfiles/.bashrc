@@ -1,106 +1,32 @@
+#!/bin/bash
 #
 # ~/.bashrc
-#
 
-# If not running interactively, don't do anything
-[[ $- != *i* ]] && return
+# homebrew
+export PATH="/opt/homebrew/bin:$PATH"
 
-# Make colorcoding available for everyone
-
-Black='\[\e[0;30m\]'	# Black
-Red='\[\e[0;31m\]'		# Red
-Green='\[\e[0;32m\]'	# Green
-Yellow='\[\e[0;33m\]'	# Yellow
-Blue='\[\e[0;34m\]'		# Blue
-Purple='\[\e[0;35m\]'	# Purple
-Cyan='\[\e[0;36m\]'		# Cyan
-White='\[\e[0;37m\]'	# White
-
-# Bold
-BBlack='\[\e[1;30m\]'	# Black
-BRed='\[\e[1;31m\]'		# Red
-BGreen='\[\e[1;32m\]'	# Green
-BYellow='\[\e[1;33m\]'	# Yellow
-BBlue='\[\e[1;34m\]'	# Blue
-BPurple='\[\e[1;35m\]'	# Purple
-BCyan='\[\e[1;36m\]'	# Cyan
-BWhite='\[\e[1;37m\]'	# White
-
-# Background
-On_Black='\[\e[40m\]'	# Black
-On_Red='\[\e[41m\]'		# Red
-On_Green='\[\e[42m\]'	# Green
-On_Yellow='\[\e[43m\]'	# Yellow
-On_Blue='\[\e[44m\]'	# Blue
-On_Purple='\[\e[45m\]'	# Purple
-On_Cyan='\[\e[46m\]'	# Cyan
-On_White='\[\e[47m\]'	# White
-
-NC='\[\e[m\]'			# Color Reset
-
-ALERT="${BWhite}${On_Red}" # Bold White on red background
-
-# Useful aliases
-alias c='clear'
-alias ..='cd ..'
-alias ls='ls -CF --color=auto'
-alias ll='s -lisa --color=auto'
-alias mkdir='mkdir -pv'
-alias free='free -mt'
-alias ps='ps auxf'
-alias psgrep='ps aux | grep -v grep | grep -i -e VSZ -e'
-alias wget='wget -c'
-alias histg='history | grep'
-alias myip='curl ipv4.icanhazip.com'
-alias grep='grep --color=auto'
-
-# Set PATH so it includes user's private bin directories
-PATH="${HOME}/bin:${HOME}/.local/bin:${PATH}"
-
-# Set prompt
-PS1="${Yellow}\u@\h${NC}: ${Blue}\w${NC} \\$ "
-
-# keychain
-eval $(keychain --eval -q id_rsa)
-
-# nano
-export VISUAL=nano
-export EDITOR="$VISUAL"
-
-# git-bash-prompt
-# if [ -f /usr/lib/bash-git-prompt/gitprompt.sh ]; then
-#   # To only show the git prompt in or under a repository directory
-#   GIT_PROMPT_ONLY_IN_REPO=1
-#   # To use upstream's default theme
-#   GIT_PROMPT_THEME=Default
-#   # To use upstream's default theme, modified by arch maintainer
-#   # GIT_PROMPT_THEME=Default_Arch
-#   source /usr/lib/bash-git-prompt/gitprompt.sh
-# fi
-
-# screen
-if [[ -z "$STY" ]]; then
-    screen -xRR session_name
-fi
-
-# screen (fix color scheme)
-export TERM=xterm-256color
+# starship
+eval "$(starship init bash)"
 
 # nvm
-. /usr/share/nvm/init-nvm.sh
+export NVM_DIR="$HOME/.nvm"
+[ -s "$(brew --prefix)/opt/nvm/nvm.sh" ] && . "$(brew --prefix)/opt/nvm/nvm.sh" # This loads nvm
+[ -s "$(brew --prefix)/opt/nvm/etc/bash_completion.d/nvm" ] && . "$(brew --prefix)/opt/nvm/etc/bash_completion.d/nvm" # This loads nvm bash_completion
 
-# nvm-use
+# auto nvm-use
 find-up() {
     path=$(pwd)
+
     while [[ "$path" != "" && ! -e "$path/$1" ]]; do
         path=${path%/*}
     done
+
     echo "$path"
 }
-
+#
 cdnvm() {
     cd "$@";
-    nvm_path=$(find-up .nvmrc | tr -d '[:space:]')
+    nvm_path=$(find-up .nvmrc | tr -d '\n')
 
     # If there are no .nvmrc file, use the default nvm version
     if [[ ! $nvm_path = *[^[:space:]]* ]]; then
@@ -140,41 +66,25 @@ cdnvm() {
         fi
     fi
 }
-
+#
 alias cd='cdnvm'
+#
+cd $PWD
 
-# emacs
-alias emacs='emacs -nw'
-
-# Last working directory:
-LWD_PATH='/tmp/lwd'
-
-function cd_() {
-    cd "$@"; echo "$PWD" > "$LWD_PATH"
-}
-
-alias cd='cd_'
-
-[[ -f "$LWD_PATH" ]] && cd $(< $LWD_PATH)
-
-# powerline-shell
-function _update_ps1() {
-    PS1=$(powerline-shell $?)
-}
-
-if [[ $TERM != linux && ! $PROMPT_COMMAND =~ _update_ps1 ]]; then
-    PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
-fi
+# emacs in terminal
+export PATH="~/bin:$PATH"
+export ALTERNATE_EDITOR=""
+export EDITOR=emacsclient
+#
+alias emacs='ec -nw'
 
 # shutdown
 function shutdown_() {
     [[ -d ~/.emacs.d/.cache/ ]] && rm -rf ~/.emacs.d/.cache/
-    [[ -d ~/.cache/ ]] && rm -rf ~/.cache/!(Cypress)
+    [[ -d ~/.cache/Cypress/ ]] && rm -rf ~/.cache/!Cypress/
     [[ -f ~/.bash_history ]] && rm ~/.bash_history
     history -c
-    sudo pacman -Rns $(pacman -Qqdt)
-    yay --noconfirm
     shutdown "$@"
 }
-
+#
 alias shutdown='shutdown_'
