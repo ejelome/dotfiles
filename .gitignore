@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+
+# Local overrides (secrets, machine-specific)
+*.local
+*.secret
+.env
+.env.*
