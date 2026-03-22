@@ -5,6 +5,18 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-03-22] - 2026-03-22
+
+### Added
+
+- Workspace standards cover context hygiene and compact comparisons.
+- Documentation procedures cover README and changelog maintenance.
+- Issue templates separate planning from implementation.
+
+### Changed
+
+- Rule guidance states triggers and examples for each workflow.
+
 ## [2026-03-15] - 2026-03-15
 
 ### Added
@@ -19,5 +31,6 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.03.15...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.03.22...HEAD
+[2026-03-22]: https://github.com/ejelome/dotfiles/compare/v2026.03.15...v2026.03.22
 [2026-03-15]: https://github.com/ejelome/dotfiles/releases/tag/v2026.03.15
