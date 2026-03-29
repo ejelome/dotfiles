@@ -1,0 +1,20 @@
+#!/bin/zsh
+# Copy to workspace-launcher.local.sh (gitignored) and customize.
+#
+# Each workspace entry is "Label|/absolute/path". Labels appear in the picker.
+
+typeset -ga WORKSPACE_ENTRIES=(
+  "My project|$HOME/Projects/myproject"
+  "Notes|$HOME/Documents/notes"
+)
+
+# Picker opens on this label; leave empty to use the first entry.
+DEFAULT_WORKSPACE_LABEL="My project"
+
+# Default action in the picker:
+# - "open": open selection normally
+# - "append": append/add selection to an existing Cursor instance via `cursor -a`
+# DEFAULT_OPEN_ACTION="open"
+
+# Optional: extra PNG paths to try for the app icon (defaults live in lib/config.sh).
+# ICON_CANDIDATE_PATHS+=("$HOME/dotfiles/macos/icons/icon-2d.png")

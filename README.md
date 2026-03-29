@@ -1,209 +1,102 @@
 # dotfiles
 
-My personal dotfiles for `zsh`, Starship, Git, Cursor rules, and dev tooling.
+macOS shell, Git, and Cursor configuration for people who want a repeatable local development environment.
 
-## Table of contents
+---
 
-- [Structure](#structure)
-- [Prerequisites](#prerequisites)
-- [Install and setup](#install-and-setup)
-- [Configuration](#configuration)
-
-## Structure
-
-```
-dotfiles/
-├── config/          # XDG config; symlinked to ~/.config
-│   ├── starship.dark.toml # Starship prompt, dark theme
-│   ├── starship.light.toml# Starship prompt, light theme
-│   └── starship.toml      # Starship prompt (base/alternate config)
-├── cursor/          # Cursor IDE; rules symlinked to ~/.cursor/rules
-│   └── rules/       # .mdc rules applied by Cursor (snapshot varies by week)
-│       ├── auto-code-style-ts.mdc            # TypeScript: ESLint, Prettier; globs *.ts, *.tsx
-│       ├── compare-compact.mdc               # Compare original vs refined markdown; preserve and compact
-│       ├── create-issue.mdc                  # Copy-paste issue, branch, commit, PR fields; no code
-│       ├── handle-changelog.mdc              # Create/update CHANGELOG structure and format
-│       ├── handle-readme.mdc                 # Create/update README structure, tone, maintenance
-│       └── implement-issue.mdc               # Run implement-issue: placeholders, infer, or execute
-├── .gitignore       # Ignore OS cruft (.DS_Store), swap files, local overrides (*.local, .env*)
-├── gitconfig        # Git user name, email, LFS filter (clean/smudge)
-├── link.sh          # Symlink dotfiles into $HOME; back up existing to *.bak
-├── README.md        # This repo: structure, prerequisites, install, configuration
-└── zshrc            # zsh: PATH, theme, completions, nvm, plugins, zoxide, Starship, eza
-```
-
-Plugins (`autosuggestions`, `syntax-highlighting`) live outside the repo; see [Configuration](#configuration).
-
-## Prerequisites
-
-Everything is installed via Homebrew:
-
- ```bash
-# Install Homebrew if missing:
- /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
- ```
-
-| Tool | Role | Install |
-|------|------|---------|
-| **zsh** | Default shell.<br />Runs `zshrc`. | Included by default. |
-| **Starship** | Theme-aware prompt. | `brew install starship` |
-| **fzf** | Fuzzy finder.<br />(key bindings + completion). | `brew install fzf`,<br />then `$(brew --prefix)/opt/fzf/install` |
-| **zoxide** | Smarter `cd`.<br />`z` jumps to frequent dirs. | `brew install zoxide` |
-| **eza** (optional) | `ls` / `ll` / `la` aliases.<br />Icons and git status. | `brew install eza`.<br />If missing, normal `ls` is used. |
-| **nvm** (optional) | Lazy-loaded Node.<br />`node` / `npm` / `npx` trigger load. | `brew install nvm`,<br />then add the export Homebrew prints.<br />`zshrc` expects `/opt/homebrew/opt/nvm/nvm.sh`. |
-| **Git** | Version control and `gitconfig`. | `brew install git`<br />or `xcode-select --install` |
-
-## Install and setup
-
-1. **Clone and symlink into `$HOME`:**
-
-   ```bash
-   git clone git@github.com:ejelome/dotfiles.git ~/dotfiles
-   cd ~/dotfiles
-   ./link.sh
-   ```
-
-   `link.sh`:
-   - Backs up existing `~/.zshrc`, `~/.gitconfig`, and `~/.cursor/rules` (if present) to `*.bak`.
-   - Creates `~/.config` and `~/.cursor` if missing.
-
-2. **Set Git name and email** (or edit `~/.gitconfig`):
-
-   ```bash
-   git config --global user.name "Your Name"
-   git config --global user.email "you@example.com"
-   ```
-
-3. **Reload shell config:**
-
-   ```bash
-   source ~/.zshrc
-   ```
-
-Tested on macOS. 
-
-Theme and plugins: [Configuration](#configuration).
-
-## Configuration
-
-- **Theme**
-  - `zshrc` reads dark/light from `defaults read -g AppleInterfaceStyle`.
-  - Sets `STARSHIP_CONFIG` and `ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE`.
-  - Starship configs live in `config/`; `link.sh` symlinks them to `~/.config/`.
-  - See [Starship's docs](https://starship.rs/config/) to customize.
-
-- **Cursor rules**
-  - `cursor/rules/` is symlinked to `~/.cursor/rules` so Cursor uses the same rules across machines.
-  - Edit in the repo; they apply after Cursor reloads.
-  - Only `rules/` is versioned; skills, MCP config, and project state stay local.
-
-- **Zsh plugins**
-  - Clone into `~/.zsh/plugins/` so `zshrc` can source them:
-
-  ```bash
-  mkdir -p ~/.zsh/plugins
-  git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/plugins/zsh-autosuggestions
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.zsh/plugins/zsh-syntax-highlighting
-  ```
-# dotfiles
-
-My personal dotfiles for `zsh`, Starship, Git, Cursor rules, and dev tooling.
-
-## Table of contents
+**Table of Contents**
 
 - [Structure](#structure)
 - [Prerequisites](#prerequisites)
-- [Install and setup](#install-and-setup)
-- [Configuration](#configuration)
+- [Install](#install)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [Conventions](#conventions)
+- [Status](#status)
+
+---
 
 ## Structure
 
-```
-dotfiles/
-├── config/          # XDG config; symlinked to ~/.config
-│   ├── starship.dark.toml # Starship prompt, dark theme
-│   ├── starship.light.toml# Starship prompt, light theme
-│   └── starship.toml      # Starship prompt (base/alternate config)
-├── cursor/          # Cursor IDE; rules symlinked to ~/.cursor/rules
-│   └── rules/       # .mdc rules applied by Cursor (snapshot varies by week)
-│       └── auto-code-style-ts.mdc            # TypeScript: ESLint, Prettier; globs *.ts, *.tsx
-├── .gitignore       # Ignore OS cruft (.DS_Store), swap files, local overrides (*.local, .env*)
-├── gitconfig        # Git user name, email, LFS filter (clean/smudge)
-├── link.sh          # Symlink dotfiles into $HOME; back up existing to *.bak
-├── README.md        # This repo: structure, prerequisites, install, configuration
-└── zshrc            # zsh: PATH, theme, completions, nvm, plugins, zoxide, Starship, eza
-```
+Core shell, Git, prompt, and Cursor rule files are tracked here and linked into your home directory.
 
-Plugins (`autosuggestions`, `syntax-highlighting`) live outside the repo; see [Configuration](#configuration).
+```text
+dotfiles/
+├── config/            # symlinked to ~/.config by basename
+├── cursor/            # symlinked to ~/.cursor/rules
+├── macos/             # macOS helper scripts
+├── .gitignore         # ignore rules for local and generated files
+├── CHANGELOG.md       # release notes and change history
+├── gitconfig          # global Git aliases and behavior defaults
+├── link.sh            # idempotent symlink installer script
+├── MANUAL.md          # detailed operational and troubleshooting guide
+├── README.md          # quick-start and repository overview
+└── zshrc              # shell aliases, functions, and environment settings
+```
 
 ## Prerequisites
 
-Everything is installed via Homebrew:
+| Tool | Purpose | Install |
+| --- | --- | --- |
+| Homebrew | Package manager for dependencies | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
+| Zsh | Shell that loads `zshrc` | Included by default on macOS |
+| Starship | Theme-aware prompt | `brew install starship` |
+| [fzf](https://github.com/junegunn/fzf) | Fuzzy finder | `brew install fzf` |
+| [zoxide](https://github.com/ajeetdsouza/zoxide) | Directory jumping via `z` | `brew install zoxide` |
+| [eza](https://github.com/eza-community/eza) (optional) | Enhanced `ls` aliases (`ll`, `la`) | `brew install eza` |
+| [nvm](https://github.com/nvm-sh/nvm) (optional) | Lazy-loaded Node runtime in `zshrc` | `brew install nvm` |
+| Git | Version control and `gitconfig` support | `brew install git` or `xcode-select --install` |
 
- ```bash
-# Install Homebrew if missing:
- /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
- ```
+## Install
 
-| Tool | Role | Install |
-|------|------|---------|
-| **zsh** | Default shell.<br />Runs `zshrc`. | Included by default. |
-| **Starship** | Theme-aware prompt. | `brew install starship` |
-| **fzf** | Fuzzy finder.<br />(key bindings + completion). | `brew install fzf`,<br />then `$(brew --prefix)/opt/fzf/install` |
-| **zoxide** | Smarter `cd`.<br />`z` jumps to frequent dirs. | `brew install zoxide` |
-| **eza** (optional) | `ls` / `ll` / `la` aliases.<br />Icons and git status. | `brew install eza`.<br />If missing, normal `ls` is used. |
-| **nvm** (optional) | Lazy-loaded Node.<br />`node` / `npm` / `npx` trigger load. | `brew install nvm`,<br />then add the export Homebrew prints.<br />`zshrc` expects `/opt/homebrew/opt/nvm/nvm.sh`. |
-| **Git** | Version control and `gitconfig`. | `brew install git`<br />or `xcode-select --install` |
+Clone the repository and run the linker script:
 
-## Install and setup
+```bash
+git clone https://github.com/ejelome/dotfiles.git
+cd dotfiles
+./link.sh
+```
 
-1. **Clone and symlink into `$HOME`:**
+## Usage
 
-   ```bash
-   git clone git@github.com:ejelome/dotfiles.git ~/dotfiles
-   cd ~/dotfiles
-   ./link.sh
-   ```
+Apply or refresh symlinks:
 
-   `link.sh`:
-   - Backs up existing `~/.zshrc`, `~/.gitconfig`, and `~/.cursor/rules` (if present) to `*.bak`.
-   - Creates `~/.config` and `~/.cursor` if missing.
+```bash
+./link.sh
+```
 
-2. **Set Git name and email** (or edit `~/.gitconfig`):
+Set Git identity after first setup:
 
-   ```bash
-   git config --global user.name "Your Name"
-   git config --global user.email "you@example.com"
-   ```
+```bash
+git config --global user.name "YOUR_NAME"
+git config --global user.email "YOUR_EMAIL@example.com"
+```
 
-3. **Reload shell config:**
+Install shell plugin dependencies outside the repository:
 
-   ```bash
-   source ~/.zshrc
-   ```
+```bash
+mkdir -p ~/.zsh/plugins
+git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.zsh/plugins/zsh-syntax-highlighting
+```
 
-Tested on macOS. 
+## Documentation
 
-Theme and plugins: [Configuration](#configuration).
+See [MANUAL.md](MANUAL.md) for detailed behavior, manual fallback steps, and launcher build commands.
 
-## Configuration
+## Conventions
 
-- **Theme**
-  - `zshrc` reads dark/light from `defaults read -g AppleInterfaceStyle`.
-  - Sets `STARSHIP_CONFIG` and `ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE`.
-  - Starship configs live in `config/`; `link.sh` symlinks them to `~/.config/`.
-  - See [Starship's docs](https://starship.rs/config/) to customize.
+- Edit tracked files in this repository, not the symlink destinations.
+- `link.sh` links `zshrc` to `~/.zshrc` and `gitconfig` to `~/.gitconfig`.
+- `link.sh` links files in `config/` to `~/.config/` by basename.
+- `link.sh` links `cursor/rules/` to `~/.cursor/rules`.
+- On macOS, `link.sh` also runs `launcher/setup-cursor-workspace-launcher.sh` to build/update the `CursorWorkspaceLauncher.app` bundle.
 
-- **Cursor rules**
-  - `cursor/rules/` is symlinked to `~/.cursor/rules` so Cursor uses the same rules across machines.
-  - Edit in the repo; they apply after Cursor reloads.
-  - Only `rules/` is versioned; skills, MCP config, and project state stay local.
+## Status
 
-- **Zsh plugins**
-  - Clone into `~/.zsh/plugins/` so `zshrc` can source them:
+> Last updated: 2026-03-24
 
-  ```bash
-  mkdir -p ~/.zsh/plugins
-  git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/plugins/zsh-autosuggestions
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.zsh/plugins/zsh-syntax-highlighting
-  ```
+The setup is stable for daily use, and symlink workflows are verified by `link.sh`.
+Current work focuses on README and Cursor rule quality improvements.
+
+See [CHANGELOG.md](CHANGELOG.md) for full history.

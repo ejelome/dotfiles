@@ -73,3 +73,9 @@ if command -v eza >/dev/null 2>&1; then
   alias ll='eza -l --icons --group-directories-first --git'
   alias la='eza -la --icons --group-directories-first --git'
 fi
+
+# -----------------------------------------------------------------------------
+# 9. GitHub API — PAT for local scripts (e.g. ./scripts/fetch-issues-milestones.sh)
+#    Replace the placeholder with your token; never paste tokens into chat or git.
+# -----------------------------------------------------------------------------
+export GITHUB_TOKEN=
