@@ -5,6 +5,18 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-03-29] - 2026-03-29
+
+### Added
+
+- A macOS launcher opens configured workspaces from the Dock.
+- A Swift picker presents projects with generated application icons.
+- Manual setup and project changes gain dedicated documentation.
+
+### Changed
+
+- Shell and linking configuration support the launcher layout.
+
 ## [2026-03-22] - 2026-03-22
 
 ### Added
@@ -31,6 +43,7 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.03.22...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.03.29...HEAD
+[2026-03-29]: https://github.com/ejelome/dotfiles/compare/v2026.03.22...v2026.03.29
 [2026-03-22]: https://github.com/ejelome/dotfiles/compare/v2026.03.15...v2026.03.22
 [2026-03-15]: https://github.com/ejelome/dotfiles/releases/tag/v2026.03.15

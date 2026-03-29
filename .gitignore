@@ -10,6 +10,10 @@ Thumbs.db
 
 # Local overrides (secrets, machine-specific)
 *.local
+launcher/workspace-launcher.local.sh
 *.secret
 .env
 .env.*
+
+# Generated macOS app bundles
+*.app
