@@ -10,13 +10,22 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
         static let buttonSpacing: CGFloat = 8
         static let iconSize: CGFloat = 64
         static let subtitleFontSize: CGFloat = 13
-        static let popupFontSize: CGFloat = 13
+        static let checkboxFontSize: CGFloat = 13
+        /// Floor only for empty list; otherwise viewport grows with content (no forced empty band).
+        static let scrollEmptyMinHeight: CGFloat = 48
+        /// Same inset on all sides inside the list bezel (tighter than window padding so the list does not feel padded twice).
+        static let scrollContentInset: CGFloat = 10
+        /// Small slack so content height rounding / bezel does not trigger a vertical scroller.
+        static let scrollHeightSlack: CGFloat = 4
     }
 
-    private let popup = NSPopUpButton(frame: .zero, pullsDown: false)
-    private let workspacePaths = [__WORKSPACE_PATHS__]
-    private let defaultSelectionIndex = __DEFAULT_SELECTION_INDEX__
+    private let pickerTitles: [String] = [__PICKER_ITEMS__]
+    private let workspacePaths: [String] = [__WORKSPACE_PATHS__]
+    private let defaultSelectionIndex: Int = __DEFAULT_SELECTION_INDEX__
     private let outputPath: String?
+    private var checkboxes: [NSButton] = []
+    private var openModeRadio: NSButton?
+    private var appendModeRadio: NSButton?
     private var outputChoice: String?
     private var didCancel = false
 
@@ -51,7 +60,7 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
             contentView.widthAnchor.constraint(lessThanOrEqualToConstant: UI.maxWidth)
         ])
 
-        let subtitle = NSTextField(labelWithString: "Choose a workspace to open in Cursor:")
+        let subtitle = NSTextField(labelWithString: "Please select a workspace:")
         subtitle.font = NSFont.systemFont(ofSize: UI.subtitleFontSize)
         subtitle.textColor = .secondaryLabelColor
 
@@ -65,18 +74,66 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
         iconRow.alignment = .leading
         iconRow.spacing = 0
 
-        popup.addItems(withTitles: [__PICKER_ITEMS__])
-        if popup.numberOfItems > 0 {
-            let clampedDefaultIndex = min(max(defaultSelectionIndex, 0), popup.numberOfItems - 1)
-            popup.selectItem(at: clampedDefaultIndex)
+        let checksStack = NSStackView()
+        checksStack.orientation = .vertical
+        checksStack.alignment = .leading
+        checksStack.spacing = 6
+        checksStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let clampedDefault: Int = pickerTitles.isEmpty ? 0 : min(max(defaultSelectionIndex, 0), pickerTitles.count - 1)
+        for (index, title) in pickerTitles.enumerated() {
+            let btn = NSButton(checkboxWithTitle: title, target: nil, action: nil)
+            btn.font = NSFont.systemFont(ofSize: UI.checkboxFontSize)
+            btn.state = (index == clampedDefault) ? .on : .off
+            checkboxes.append(btn)
+            checksStack.addArrangedSubview(btn)
         }
-        fputs("picker: popup items=\(popup.numberOfItems), workspace paths=\(workspacePaths.count)\n", stderr)
-        popup.bezelStyle = .rounded
-        popup.controlSize = .regular
-        popup.font = NSFont.systemFont(ofSize: UI.popupFontSize, weight: .medium)
-        popup.translatesAutoresizingMaskIntoConstraints = false
-        popup.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        popup.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let scrollDocument = NSView()
+        scrollDocument.translatesAutoresizingMaskIntoConstraints = false
+        scrollDocument.addSubview(checksStack)
+
+        NSLayoutConstraint.activate([
+            checksStack.topAnchor.constraint(equalTo: scrollDocument.topAnchor, constant: UI.scrollContentInset),
+            checksStack.leadingAnchor.constraint(equalTo: scrollDocument.leadingAnchor, constant: UI.scrollContentInset),
+            checksStack.trailingAnchor.constraint(equalTo: scrollDocument.trailingAnchor, constant: -UI.scrollContentInset),
+            checksStack.bottomAnchor.constraint(equalTo: scrollDocument.bottomAnchor, constant: -UI.scrollContentInset)
+        ])
+
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .bezelBorder
+        scrollView.drawsBackground = true
+        scrollView.documentView = scrollDocument
+        scrollView.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        scrollView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+
+        let scrollHeightConstraint = scrollView.heightAnchor.constraint(equalToConstant: 1)
+        NSLayoutConstraint.activate([
+            scrollDocument.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
+            scrollHeightConstraint
+        ])
+
+        let modeLabel = NSTextField(labelWithString: "Mode:")
+        modeLabel.font = NSFont.systemFont(ofSize: UI.subtitleFontSize)
+        modeLabel.textColor = .secondaryLabelColor
+
+        let openRadio = NSButton(radioButtonWithTitle: "Open", target: self, action: #selector(modeRadioChanged))
+        openRadio.state = .on
+        openRadio.font = NSFont.systemFont(ofSize: UI.checkboxFontSize)
+        let appendRadio = NSButton(radioButtonWithTitle: "Append", target: self, action: #selector(modeRadioChanged))
+        appendRadio.font = NSFont.systemFont(ofSize: UI.checkboxFontSize)
+        openModeRadio = openRadio
+        appendModeRadio = appendRadio
+
+        let modeStack = NSStackView(views: [modeLabel, openRadio, appendRadio])
+        modeStack.orientation = .horizontal
+        modeStack.alignment = .centerY
+        modeStack.spacing = UI.buttonSpacing
+        modeStack.translatesAutoresizingMaskIntoConstraints = false
 
         let cancelButton = NSButton(title: "Cancel", target: self, action: #selector(cancelAndClose))
         cancelButton.keyEquivalent = "\u{1b}"
@@ -84,71 +141,41 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
         cancelButton.controlSize = .regular
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
 
-        let appendButton = NSButton(title: "Append", target: self, action: #selector(appendSelected))
-        appendButton.bezelStyle = .rounded
-        appendButton.controlSize = .regular
-        appendButton.translatesAutoresizingMaskIntoConstraints = false
-
-        let openButton = NSButton(title: "Open", target: self, action: #selector(openSelected))
-        openButton.bezelStyle = .rounded
-        openButton.controlSize = .regular
-        openButton.translatesAutoresizingMaskIntoConstraints = false
+        let okButton = NSButton(title: "OK", target: self, action: #selector(confirmSelection))
+        okButton.bezelStyle = .rounded
+        okButton.controlSize = .regular
+        okButton.translatesAutoresizingMaskIntoConstraints = false
+        okButton.keyEquivalent = "\r"
 
         cancelButton.setContentCompressionResistancePriority(.required, for: .horizontal)
-        appendButton.setContentCompressionResistancePriority(.required, for: .horizontal)
-        openButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        okButton.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        // HIG: Return activates the primary action; Escape cancels.
-        // HIG: Append should not have a default key binding unless explicitly assigned.
-        openButton.keyEquivalent = "\r"
-        appendButton.keyEquivalent = ""
-        // Cancel keyEquivalent is already set above.
-
-        // HIG: Keep all buttons the same height.
-        let buttonHeight: CGFloat = 22 // AppKit standard control height (pt)
+        let buttonHeight: CGFloat = 22
         NSLayoutConstraint.activate([
             cancelButton.heightAnchor.constraint(equalToConstant: buttonHeight),
-            appendButton.heightAnchor.constraint(equalToConstant: buttonHeight),
-            openButton.heightAnchor.constraint(equalToConstant: buttonHeight)
+            okButton.heightAnchor.constraint(equalToConstant: buttonHeight)
         ])
 
-        // HIG: Non-primary buttons should have equal width (sized to the longest label).
         cancelButton.sizeToFit()
-        appendButton.sizeToFit()
-        let nonPrimaryButtonWidth = max(cancelButton.intrinsicContentSize.width, appendButton.intrinsicContentSize.width)
+        okButton.sizeToFit()
+        let buttonWidth = max(cancelButton.intrinsicContentSize.width, okButton.intrinsicContentSize.width)
         NSLayoutConstraint.activate([
-            cancelButton.widthAnchor.constraint(equalToConstant: nonPrimaryButtonWidth),
-            appendButton.widthAnchor.constraint(equalToConstant: nonPrimaryButtonWidth)
+            cancelButton.widthAnchor.constraint(equalToConstant: buttonWidth),
+            okButton.widthAnchor.constraint(equalToConstant: buttonWidth)
         ])
 
-        // HIG: Use a flexible spacer so the visual gap between "Cancel" and "Append"
-        // grows, while "Append" + "Open" remain tightly grouped.
         let spacerView = NSView(frame: .zero)
         spacerView.setContentHuggingPriority(.defaultLow, for: .horizontal)
         spacerView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let actionsStack = NSStackView(views: [appendButton, openButton])
+        let actionsStack = NSStackView(views: [spacerView, cancelButton, okButton])
         actionsStack.orientation = .horizontal
         actionsStack.alignment = .centerY
         actionsStack.spacing = UI.buttonSpacing
         actionsStack.distribution = .fill
-        // Ensure the pair remains tightly grouped; let the spacer absorb extra width.
-        actionsStack.setContentHuggingPriority(.required, for: .horizontal)
-        actionsStack.setContentCompressionResistancePriority(.required, for: .horizontal)
-
-        let buttonsStack = NSStackView(views: [cancelButton, spacerView, actionsStack])
-        buttonsStack.orientation = .horizontal
-        buttonsStack.alignment = .centerY
-        buttonsStack.spacing = 0
-        buttonsStack.distribution = .fill
-        buttonsStack.setContentHuggingPriority(.required, for: .horizontal)
-
-        // Ensure the "button row" itself doesn't force extra height.
-        buttonsStack.translatesAutoresizingMaskIntoConstraints = false
         actionsStack.translatesAutoresizingMaskIntoConstraints = false
-        spacerView.translatesAutoresizingMaskIntoConstraints = false
 
-        let rootStack = NSStackView(views: [iconRow, subtitle, popup, buttonsStack])
+        let rootStack = NSStackView(views: [iconRow, subtitle, scrollView, modeStack, actionsStack])
         rootStack.orientation = .vertical
         rootStack.alignment = .leading
         rootStack.spacing = UI.stackSpacing
@@ -158,8 +185,9 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
         NSLayoutConstraint.activate([
             iconView.widthAnchor.constraint(equalToConstant: UI.iconSize),
             iconView.heightAnchor.constraint(equalToConstant: UI.iconSize),
-            popup.widthAnchor.constraint(equalTo: rootStack.widthAnchor),
-            buttonsStack.widthAnchor.constraint(equalTo: rootStack.widthAnchor),
+            scrollView.widthAnchor.constraint(equalTo: rootStack.widthAnchor),
+            modeStack.widthAnchor.constraint(equalTo: rootStack.widthAnchor),
+            actionsStack.widthAnchor.constraint(equalTo: rootStack.widthAnchor),
 
             rootStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: UI.verticalPadding),
             rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: UI.horizontalPadding),
@@ -167,15 +195,32 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
             rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -UI.verticalPadding)
         ])
 
+        // Size list viewport to full content height (capped by screen) so scrollbars stay off for normal lists.
+        window.setContentSize(NSSize(width: UI.minWidth, height: 640))
+        contentView.layoutSubtreeIfNeeded()
+        scrollDocument.layoutSubtreeIfNeeded()
+        let rawDocHeight = max(scrollDocument.fittingSize.height, scrollDocument.bounds.height)
+        let docNatural = ceil(rawDocHeight) + UI.scrollHeightSlack
+        let screenListCap = min(
+            720,
+            max(160, (NSScreen.main?.visibleFrame.height ?? 800) * 0.55)
+        )
+        let scrollViewportHeight: CGFloat
+        if pickerTitles.isEmpty {
+            scrollViewportHeight = UI.scrollEmptyMinHeight
+        } else {
+            scrollViewportHeight = min(screenListCap, max(1, docNatural))
+        }
+        scrollHeightConstraint.constant = scrollViewportHeight
+
         contentView.layoutSubtreeIfNeeded()
         let contentSize = rootStack.fittingSize
         let fittedWidth = max(UI.minWidth, min(UI.maxWidth, contentSize.width + (UI.horizontalPadding * 2)))
         let fittedHeight = contentSize.height + (UI.verticalPadding * 2)
         window.setContentSize(NSSize(width: fittedWidth, height: fittedHeight))
 
-        window.initialFirstResponder = popup
-        // HIG: Return should activate "Open" (primary action).
-        window.defaultButtonCell = openButton.cell as? NSButtonCell
+        window.initialFirstResponder = checkboxes.first
+        window.defaultButtonCell = okButton.cell as? NSButtonCell
 
         window.makeKeyAndOrderFront(nil)
         app.activate(ignoringOtherApps: true)
@@ -186,37 +231,52 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
         return outputChoice
     }
 
-    func currentSelectionPath() -> String? {
-        let selectedIndex = popup.indexOfSelectedItem
-        if selectedIndex >= 0 && selectedIndex < workspacePaths.count {
-            return workspacePaths[selectedIndex]
+    @objc private func modeRadioChanged(_ sender: NSButton) {
+        if sender === openModeRadio {
+            appendModeRadio?.state = .off
+            openModeRadio?.state = .on
+        } else if sender === appendModeRadio {
+            openModeRadio?.state = .off
+            appendModeRadio?.state = .on
         }
-        return nil
     }
 
-    @objc private func openSelected() {
-        fputs("picker: open clicked, selected index=\(popup.indexOfSelectedItem)\n", stderr)
-        submitSelection(action: "open")
+    private func currentAction() -> String {
+        if appendModeRadio?.state == .on {
+            return "append"
+        }
+        return "open"
     }
 
-    @objc private func appendSelected() {
-        fputs("picker: append clicked, selected index=\(popup.indexOfSelectedItem)\n", stderr)
-        submitSelection(action: "append")
+    private func selectedPaths() -> [String] {
+        var out: [String] = []
+        for (i, btn) in checkboxes.enumerated() {
+            if btn.state == .on, i < workspacePaths.count {
+                out.append(workspacePaths[i])
+            }
+        }
+        return out
     }
 
-    private func submitSelection(action: String) {
-        guard let selectedPath = currentSelectionPath() else {
-            fputs("picker: no valid selected path\n", stderr)
+    @objc private func confirmSelection() {
+        let paths = selectedPaths()
+        if paths.isEmpty {
+            fputs("picker: no workspace selected\n", stderr)
             let alert = NSAlert()
-            alert.messageText = "Select a workspace first."
+            alert.messageText = "Select at least one workspace."
             alert.alertStyle = .warning
             alert.addButton(withTitle: "OK")
             alert.runModal()
             return
         }
-        fputs("picker: selected path=\(selectedPath)\n", stderr)
+        let action = currentAction()
+        fputs("picker: OK action=\(action) paths=\(paths.count)\n", stderr)
 
-        let outputValue = "\(action)\t\(selectedPath)"
+        // New protocol: first line is action, second line is paths joined by ASCII unit separator (U+001F).
+        // Legacy single-tab format remains supported by the shell launcher for older pickers.
+        let unitSep = "\u{001F}"
+        let joined = paths.joined(separator: unitSep)
+        let outputValue = "\(action)\n\(joined)\n"
 
         if let outputPath {
             do {
@@ -246,7 +306,6 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        // Preserve explicit Open selections; only treat manual close as cancel.
         if outputChoice == nil {
             fputs("picker: window closed without output; treating as cancel\n", stderr)
             didCancel = true
@@ -260,6 +319,6 @@ let outputPath = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : ni
 let picker = PickerDelegate(outputPath: outputPath)
 if let choice = picker.run() {
     if outputPath == nil {
-        print(choice)
+        print(choice, terminator: "")
     }
 }

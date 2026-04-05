@@ -1,0 +1,5 @@
+# Copy to ~/.zshrc.local and set values (that path is ignored by *.local in this repo’s .gitignore).
+# Sourced by the symlinked zshrc — keep tokens and machine-only exports here, never in tracked files.
+
+# Required for GitHub API / CLI tooling used by many projects (gh, npm publish, CI scripts, etc.).
+export GITHUB_TOKEN="YOUR_TOKEN"

@@ -14,7 +14,6 @@ function normalize_target_path() {
   local raw_path="$1"
   local normalized="${raw_path}"
   normalized="${normalized//$'\r'/}"
-  normalized="${normalized//$'\n'/}"
   normalized="${normalized#"${normalized%%[![:space:]]*}"}"
   normalized="${normalized%"${normalized##*[![:space:]]}"}"
   printf '%s' "${normalized}"
@@ -52,22 +51,58 @@ if [[ -z "${RAW_CHOICE}" ]]; then
   exit 0
 fi
 
+typeset -a TARGET_PATHS
+TARGET_PATHS=()
 OPEN_ACTION="open"
-TARGET_PATH="${RAW_CHOICE}"
 
-# New picker format: "<action>\t<path>". Back-compat: plain "<path>".
-if [[ "${RAW_CHOICE}" == *$'\t'* ]]; then
+# New picker: line 1 = action, line 2 = paths joined by ASCII unit separator (U+001F).
+# Legacy: single line "action<TAB>path" or plain path (open).
+if [[ "${RAW_CHOICE}" == *$'\n'* ]]; then
+  OPEN_ACTION="${RAW_CHOICE%%$'\n'*}"
+  OPEN_ACTION="${OPEN_ACTION#"${OPEN_ACTION%%[![:space:]]*}"}"
+  OPEN_ACTION="${OPEN_ACTION%"${OPEN_ACTION##*[![:space:]]}"}"
+  pathline="${RAW_CHOICE#*$'\n'}"
+  pathline="${pathline//$'\r'/}"
+  pathline="${pathline#"${pathline%%[![:space:]]*}"}"
+  pathline="${pathline%"${pathline##*[![:space:]]}"}"
+  sep=$'\x1f'
+  TARGET_PATHS=("${(@ps/$sep/)pathline}")
+elif [[ "${RAW_CHOICE}" == *$'\t'* ]]; then
   OPEN_ACTION="${RAW_CHOICE%%$'\t'*}"
-  TARGET_PATH="${RAW_CHOICE#*$'\t'}"
+  OPEN_ACTION="${OPEN_ACTION#"${OPEN_ACTION%%[![:space:]]*}"}"
+  OPEN_ACTION="${OPEN_ACTION%"${OPEN_ACTION##*[![:space:]]}"}"
+  TARGET_PATHS=("${RAW_CHOICE#*$'\t'}")
+else
+  TARGET_PATHS=("${RAW_CHOICE}")
 fi
 
-log_debug "parsed action=${OPEN_ACTION}, target path=${TARGET_PATH}"
-
-if [[ ! -e "${TARGET_PATH}" ]]; then
-  log_debug "workspace path missing: ${TARGET_PATH}"
-  osascript -e "display alert \"Workspace not found: ${TARGET_PATH}\""
-  exit 1
+if [[ "${OPEN_ACTION}" != "append" ]]; then
+  OPEN_ACTION="open"
 fi
+
+# Drop empty segments from split
+typeset -a cleaned
+cleaned=()
+for p in "${TARGET_PATHS[@]}"; do
+  [[ -n "${p}" ]] || continue
+  cleaned+=("${p}")
+done
+TARGET_PATHS=("${cleaned[@]}")
+
+if (( ${#TARGET_PATHS[@]} == 0 )); then
+  log_debug "empty path list after parse"
+  exit 0
+fi
+
+log_debug "parsed action=${OPEN_ACTION}, path count=${#TARGET_PATHS[@]}"
+
+for p in "${TARGET_PATHS[@]}"; do
+  if [[ ! -e "${p}" ]]; then
+    log_debug "workspace path missing: ${p}"
+    osascript -e "display alert \"Workspace not found: ${p}\""
+    exit 1
+  fi
+done
 
 function open_workspace_with_cursor() {
   # Do not name this `path`: in zsh, `path` is tied to PATH and would clobber it.
@@ -105,9 +140,29 @@ function open_workspace_with_cursor() {
   return 1
 }
 
-if ! open_workspace_with_cursor "${TARGET_PATH}" "${OPEN_ACTION}"; then
-  exit 1
+idx=0
+path_count="${#TARGET_PATHS[@]}"
+
+if [[ "${OPEN_ACTION}" == "open" ]]; then
+  for p in "${TARGET_PATHS[@]}"; do
+    idx=$((idx + 1))
+    if (( idx == 1 )); then
+      if ! open_workspace_with_cursor "${p}" "open"; then
+        exit 1
+      fi
+    else
+      if ! open_workspace_with_cursor "${p}" "append"; then
+        exit 1
+      fi
+    fi
+  done
+else
+  for p in "${TARGET_PATHS[@]}"; do
+    if ! open_workspace_with_cursor "${p}" "append"; then
+      exit 1
+    fi
+  done
 fi
 
-log_debug "workspace opened successfully: ${TARGET_PATH}"
+log_debug "workspace(s) opened successfully (${path_count} path(s))"
 exit 0

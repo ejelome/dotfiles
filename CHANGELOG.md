@@ -5,6 +5,23 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-04-05] - 2026-04-05
+
+### Added
+
+- Intel and Apple Silicon package paths support local tools.
+- Local override templates keep identity and secrets outside source.
+- Guided workspace playbooks cover recurring maintenance tasks.
+
+### Changed
+
+- Launcher scripts validate configuration and recover from failures.
+- Documentation reflects the portable setup.
+
+### Removed
+
+- Superseded workspace modules no longer duplicate active behavior.
+
 ## [2026-03-29] - 2026-03-29
 
 ### Added
@@ -43,7 +60,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.03.29...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.04.05...HEAD
+[2026-04-05]: https://github.com/ejelome/dotfiles/compare/v2026.03.29...v2026.04.05
 [2026-03-29]: https://github.com/ejelome/dotfiles/compare/v2026.03.22...v2026.03.29
 [2026-03-22]: https://github.com/ejelome/dotfiles/compare/v2026.03.15...v2026.03.22
 [2026-03-15]: https://github.com/ejelome/dotfiles/releases/tag/v2026.03.15

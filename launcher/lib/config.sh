@@ -13,11 +13,6 @@ readonly LAUNCHER_USER_CONFIG="${SCRIPT_DIR}/workspace-launcher.local.sh"
 typeset -ga WORKSPACE_ENTRIES=()
 DEFAULT_WORKSPACE_LABEL=""
 
-# Picker open action:
-# - "open": open selection normally (new or existing behavior depends on Cursor)
-# - "append": append/add selection to an existing Cursor instance via `cursor -a`
-DEFAULT_OPEN_ACTION="open"
-
 # PNG sources for optional icon generation; checked in order. Extend in local config via +=.
 typeset -ga ICON_CANDIDATE_PATHS=(
   "${SCRIPT_DIR}/icons/icon-2d.png"
@@ -30,7 +25,6 @@ typeset -ra REQUIRED_TOOLS=(
   defaults
   killall
   mktemp
-  plutil
   python3
 )
 

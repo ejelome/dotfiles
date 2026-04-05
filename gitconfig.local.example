@@ -1,0 +1,6 @@
+# Copy to ~/.gitconfig.local and customize (that path is not tracked).
+# Keeping [user] here avoids writing identity into the symlinked repo gitconfig.
+
+[user]
+	name = YOUR_NAME
+	email = YOUR_EMAIL@example.com
