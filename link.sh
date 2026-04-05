@@ -2,7 +2,20 @@
 # Symlink dotfiles from this repo into $HOME. Backs up existing files.
 set -e
 DOTFILES_ROOT="$(cd "$(dirname "$0")" && pwd)"
-HOME="${HOME:-$HOME}"
+
+# Block accidental ~/.cursor-style nesting inside the repo (recursive symlink hazard).
+if [[ -e "$DOTFILES_ROOT/cursor/rules/rules" ]]; then
+  echo "link.sh: remove $DOTFILES_ROOT/cursor/rules/rules (nested rules mirror breaks tools and symlinks)." >&2
+  exit 1
+fi
+if [[ -e "$DOTFILES_ROOT/cursor/skills-cursor/skills-cursor" ]]; then
+  echo "link.sh: remove $DOTFILES_ROOT/cursor/skills-cursor/skills-cursor (nested skills mirror breaks tools and symlinks)." >&2
+  exit 1
+fi
+if [[ -e "$DOTFILES_ROOT/cursor/commands/commands" ]]; then
+  echo "link.sh: remove $DOTFILES_ROOT/cursor/commands/commands (nested commands mirror breaks tools and symlinks)." >&2
+  exit 1
+fi
 
 link() {
   local src="$1" dest="$2"
@@ -27,6 +40,14 @@ fi
 
 if [[ -d "$DOTFILES_ROOT/cursor/rules" ]]; then
   link "$DOTFILES_ROOT/cursor/rules" "$HOME/.cursor/rules"
+fi
+
+if [[ -d "$DOTFILES_ROOT/cursor/skills-cursor" ]]; then
+  link "$DOTFILES_ROOT/cursor/skills-cursor" "$HOME/.cursor/skills-cursor"
+fi
+
+if [[ -d "$DOTFILES_ROOT/cursor/commands" ]]; then
+  link "$DOTFILES_ROOT/cursor/commands" "$HOME/.cursor/commands"
 fi
 
 if [[ "$OSTYPE" == darwin* ]]; then

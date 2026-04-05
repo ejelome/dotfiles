@@ -1,4 +1,7 @@
-"""Remove stale Dock tiles for the Cursor workspace launcher app; plist is rewritten only."""
+"""Remove stale Dock tiles for the Cursor workspace launcher app; plist is rewritten only.
+
+Caller should restart Dock after writing (see dock.sh) so macOS reloads the plist.
+"""
 from __future__ import annotations
 
 import pathlib

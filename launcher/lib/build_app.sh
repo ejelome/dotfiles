@@ -18,12 +18,10 @@ function ensure_bundle_structure() {
 function build_picker_binary() {
   local swift_tmp_base swift_src picker_tmp
   local picker_items workspace_paths default_index
-  local default_open_action
 
   picker_items="$(picker_items_swift_literal)"
   workspace_paths="$(workspace_paths_swift_literal)"
   default_index="$(default_selection_index)"
-  default_open_action="${DEFAULT_OPEN_ACTION:-open}"
 
   swift_tmp_base="$(mktemp -t cursor_launcher_picker)"
   swift_src="${swift_tmp_base}.swift"
@@ -31,7 +29,7 @@ function build_picker_binary() {
   mv "${swift_tmp_base}" "${swift_src}"
 
   {
-    python3 - "${PICKER_TEMPLATE_PATH}" "${swift_src}" "${picker_items}" "${workspace_paths}" "${default_index}" "${default_open_action}" <<'PY'
+    python3 - "${PICKER_TEMPLATE_PATH}" "${swift_src}" "${picker_items}" "${workspace_paths}" "${default_index}" <<'PY'
 import pathlib
 import sys
 
@@ -40,7 +38,6 @@ output_path = pathlib.Path(sys.argv[2])
 picker_items = sys.argv[3]
 workspace_paths = sys.argv[4]
 default_index = sys.argv[5]
-default_open_action = sys.argv[6]
 
 template = template_path.read_text(encoding="utf-8")
 rendered = (
@@ -48,7 +45,6 @@ rendered = (
     .replace("__PICKER_ITEMS__", picker_items)
     .replace("__WORKSPACE_PATHS__", workspace_paths)
     .replace("__DEFAULT_SELECTION_INDEX__", default_index)
-    .replace("__DEFAULT_OPEN_ACTION__", default_open_action)
 )
 output_path.write_text(rendered, encoding="utf-8")
 PY

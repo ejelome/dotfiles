@@ -11,6 +11,11 @@ function validate_workspace_config() {
     [[ "${path}" != "${entry}" ]] || die "Workspace entry missing separator '|': ${entry}"
     [[ -n "${path}" ]] || die "Workspace path is empty for label: ${label}"
   done
+
+  for entry in "${WORKSPACE_ENTRIES[@]}"; do
+    path="${entry#*|}"
+    [[ -e "${path}" ]] || log_warn "Workspace path does not exist yet (build continues): ${path}"
+  done
 }
 
 function escape_swift() {

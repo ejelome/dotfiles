@@ -1,6 +1,7 @@
-[user]
-	name = ejelome
-	email = ejelome@gmail.com
+# Identity: use ~/.gitconfig.local so this file can stay repo-clean when symlinked.
+# Copy gitconfig.local.example there and set name/email (see README **Install**).
+[include]
+	path = ~/.gitconfig.local
 [filter "lfs"]
 	required = true
 	clean = git-lfs clean -- %f

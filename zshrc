@@ -10,6 +10,8 @@ export PATH="$HOME/.local/bin:$PATH"
 # -----------------------------------------------------------------------------
 # 2. Theme (macOS) — detect once, set all theme-dependent vars
 # -----------------------------------------------------------------------------
+# Starship: dark/light only. ~/.config/starship.toml is linked for manual overrides
+# (e.g. unset STARSHIP_CONFIG) or tools that do not read this zshrc.
 if [[ "$(defaults read -g AppleInterfaceStyle 2>/dev/null)" == "Dark" ]]; then
   export _ZSH_THEME_MODE=dark
   export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=250'
@@ -36,7 +38,15 @@ fi
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 nvm() {
   unfunction nvm node npm npx 2>/dev/null
-  [[ -s /opt/homebrew/opt/nvm/nvm.sh ]] && . /opt/homebrew/opt/nvm/nvm.sh
+  local _nvm_sh=""
+  if [[ -s /opt/homebrew/opt/nvm/nvm.sh ]]; then
+    _nvm_sh=/opt/homebrew/opt/nvm/nvm.sh
+  elif [[ -s /usr/local/opt/nvm/nvm.sh ]]; then
+    _nvm_sh=/usr/local/opt/nvm/nvm.sh
+  elif [[ -s "${NVM_DIR}/nvm.sh" ]]; then
+    _nvm_sh="${NVM_DIR}/nvm.sh"
+  fi
+  [[ -s "$_nvm_sh" ]] && . "$_nvm_sh"
   nvm "$@"
 }
 node() { nvm; node "$@"; }
@@ -48,10 +58,13 @@ npx() { nvm; npx "$@"; }
 # -----------------------------------------------------------------------------
 [[ -f ~/.zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] &&
   source ~/.zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-[[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]] &&
-  source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
-[[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]] &&
-  source /opt/homebrew/opt/fzf/shell/completion.zsh
+_fzf_base=""
+for _fzf_base in /opt/homebrew/opt/fzf /usr/local/opt/fzf; do
+  [[ -f "${_fzf_base}/shell/key-bindings.zsh" ]] && break
+done
+[[ -f "${_fzf_base}/shell/key-bindings.zsh" ]] && source "${_fzf_base}/shell/key-bindings.zsh"
+[[ -f "${_fzf_base}/shell/completion.zsh" ]] && source "${_fzf_base}/shell/completion.zsh"
+unset _fzf_base
 [[ -f ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] &&
   source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
@@ -75,7 +88,7 @@ if command -v eza >/dev/null 2>&1; then
 fi
 
 # -----------------------------------------------------------------------------
-# 9. GitHub API — PAT for local scripts (e.g. ./scripts/fetch-issues-milestones.sh)
-#    Replace the placeholder with your token; never paste tokens into chat or git.
+# 9. Local overrides — GITHUB_TOKEN, secrets, machine-specific exports (never commit)
 # -----------------------------------------------------------------------------
-export GITHUB_TOKEN=
+# ~/.zshrc.local: see zshrc.local.example.
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
