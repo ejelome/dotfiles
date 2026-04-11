@@ -273,7 +273,7 @@ final class PickerDelegate: NSObject, NSWindowDelegate {
         fputs("picker: OK action=\(action) paths=\(paths.count)\n", stderr)
 
         // New protocol: first line is action, second line is paths joined by ASCII unit separator (U+001F).
-        // Legacy single-tab format remains supported by the shell launcher for older pickers.
+        // Single-tab format remains supported by the shell launcher for pickers that use it.
         let unitSep = "\u{001F}"
         let joined = paths.joined(separator: unitSep)
         let outputValue = "\(action)\n\(joined)\n"

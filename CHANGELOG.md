@@ -5,6 +5,23 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-04-11] - 2026-04-11
+
+### Added
+
+- Core documentation standards define structure, style, and routing.
+- Command-line helpers clear local application state safely.
+- Fast smoke checks cover configuration and documentation.
+
+### Changed
+
+- Linking supports the centralized workspace layout.
+- Maintainer documentation follows the shared standards.
+
+### Removed
+
+- The slower QA path yields to focused smoke checks.
+
 ## [2026-04-05] - 2026-04-05
 
 ### Added
@@ -60,7 +77,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.04.05...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.04.11...HEAD
+[2026-04-11]: https://github.com/ejelome/dotfiles/compare/v2026.04.05...v2026.04.11
 [2026-04-05]: https://github.com/ejelome/dotfiles/compare/v2026.03.29...v2026.04.05
 [2026-03-29]: https://github.com/ejelome/dotfiles/compare/v2026.03.22...v2026.03.29
 [2026-03-22]: https://github.com/ejelome/dotfiles/compare/v2026.03.15...v2026.03.22

@@ -18,7 +18,8 @@ launcher/workspace-launcher.local.sh
 # Generated macOS app bundles
 *.app
 
-# Never nest ~/.cursor-style self-symlinks inside the repo (`rules/rules`, `skills-cursor/skills-cursor`, `commands/commands`)
+# Never nest ~/.cursor-style self-symlinks inside the repo (`rules/rules`, `skills-cursor/skills-cursor`, `commands/commands`, `core/core`)
 cursor/rules/rules/
 cursor/skills-cursor/skills-cursor/
 cursor/commands/commands
+cursor/core/core
