@@ -56,7 +56,7 @@ TARGET_PATHS=()
 OPEN_ACTION="open"
 
 # New picker: line 1 = action, line 2 = paths joined by ASCII unit separator (U+001F).
-# Legacy: single line "action<TAB>path" or plain path (open).
+# Alternate: single line "action<TAB>path" or plain path (open).
 if [[ "${RAW_CHOICE}" == *$'\n'* ]]; then
   OPEN_ACTION="${RAW_CHOICE%%$'\n'*}"
   OPEN_ACTION="${OPEN_ACTION#"${OPEN_ACTION%%[![:space:]]*}"}"

@@ -7,6 +7,14 @@
 # -----------------------------------------------------------------------------
 export PATH="$HOME/.local/bin:$PATH"
 
+# Dotfiles checkout: when ~/.zshrc resolves into the repo, put tools/cursor-cli on PATH.
+_dotfiles_zshrc="${ZDOTDIR:-$HOME}/.zshrc"
+if [[ -e "$_dotfiles_zshrc" ]] && [[ -f "${_dotfiles_zshrc:A:h}/tools/cursor-cli/install-extensions.sh" ]]; then
+  export DOTFILES_ROOT="${_dotfiles_zshrc:A:h}"
+  export PATH="$DOTFILES_ROOT/tools/cursor-cli:$PATH"
+fi
+unset _dotfiles_zshrc
+
 # -----------------------------------------------------------------------------
 # 2. Theme (macOS) — detect once, set all theme-dependent vars
 # -----------------------------------------------------------------------------

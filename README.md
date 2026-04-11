@@ -1,101 +1,96 @@
 # dotfiles
 
-macOS shell, Git, and Cursor configuration for people who want a repeatable local development environment.
+[![Smoke check](https://img.shields.io/github/actions/workflow/status/ejelome/dotfiles/smoke-check.yml?branch=main&label=smoke%20check)](https://github.com/ejelome/dotfiles/actions/workflows/smoke-check.yml)
 
-[![QA](https://img.shields.io/github/actions/workflow/status/ejelome/dotfiles/qa.yml?label=QA&logo=github)](https://github.com/ejelome/dotfiles/actions/workflows/qa.yml)
+macOS shell, Git, and Cursor configuration symlinked into `~` and `~/.cursor` via `link.sh`.
 
 ---
 
-**Table of Contents**
+**Table of contents**
 
 - [Structure](#structure)
+- [What's included](#whats-included)
 - [Prerequisites](#prerequisites)
 - [Install](#install)
+- [What link.sh does](#what-linksh-does)
 - [Usage](#usage)
-  - [Cursor extensions](#cursor-extensions)
-- [Documentation](#documentation)
-- [Agent context](#agent-context)
-- [Conventions](#conventions)
+- [Contributing](#contributing)
 - [Status](#status)
 
 ---
 
 ## Structure
 
-Core shell, Git, prompt, and Cursor rule files are tracked here and linked into your home directory.
-
-At each directory level the tree lists **subdirectories first** (A-Z), then **files** (A-Z), using ASCII order (names starting with `.` sort before `A`).
-
 ```text
 dotfiles/
-├── config/            # symlinked to ~/.config by basename
-├── cursor/
-│   ├── commands/      # symlinked to ~/.cursor/commands (slash commands)
-│   ├── rules/         # symlinked to ~/.cursor/rules
-│   ├── skills-cursor/ # symlinked to ~/.cursor/skills-cursor
-│   └── extensions.txt # Cursor extension IDs for repeatable installs (not symlinked)
-├── launcher/          # Cursor workspace app: setup script, templates, icons
-├── scripts/           # maintenance helpers (qa.sh, ext.sh)
-├── .cursorignore      # trims Cursor index (e.g. .git)
-├── .gitignore         # ignore rules for local and generated files
-├── AGENTS.md          # on-ramp for coding agents (Cursor, rules, skills, commands)
-├── Brewfile           # optional `brew bundle` mirror of CLI prerequisites
-├── CHANGELOG.md       # release notes and change history
-├── gitconfig          # global Git defaults (includes ~/.gitconfig.local for identity)
-├── gitconfig.local.example  # copy to ~/.gitconfig.local for name/email (not symlinked)
-├── link.sh            # idempotent symlink installer script
-├── MANUAL.md          # detailed operational and troubleshooting guide
-├── README.md          # quick-start and repository overview
-├── zshrc              # shell aliases, functions, and environment settings
-└── zshrc.local.example  # copy to ~/.zshrc.local for GITHUB_TOKEN and other secrets (not symlinked)
+├── .github/                  # CI workflows (smoke-check on push/PR)
+├── config/                   # symlinked to ~/.config/ by basename (Starship TOML, etc.)
+├── cursor/                   # default CURSOR_CONFIG_ROOT → ~/.cursor (rules, commands, core, extensions.txt)
+├── launcher/                 # macOS workspace launcher; builds CursorWorkspaceLauncher.app
+├── scripts/                  # small helpers (e.g. ext.sh); not symlinked by link.sh
+├── tools/                    # maintenance scripts; smoke-check.sh, cursor-cli/
+├── .cursorignore
+├── .gitignore
+├── .markdownlint.json        # markdownlint rule overrides (used by smoke-check and CI)
+├── AGENTS.md
+├── Brewfile
+├── CHANGELOG.md
+├── MANUAL.md
+├── OWNERS.md
+├── README.md
+├── gitconfig                 # global Git defaults; includes ~/.gitconfig.local for identity
+├── gitconfig.local.example   # copy to ~/.gitconfig.local (not symlinked)
+├── link.sh                   # idempotent symlink installer
+├── zshrc
+└── zshrc.local.example       # copy to ~/.zshrc.local for secrets (not symlinked)
 ```
+
+## What's included
+
+| Area | Files / tools |
+| --- | --- |
+| Shell | `zshrc` → `~/.zshrc`; Starship prompt (dark/light theme detection); zsh-autosuggestions; zsh-syntax-highlighting; fzf key bindings and completions; zoxide (`z`); eza aliases (`ls`, `ll`, `la`) |
+| Git | `gitconfig` → `~/.gitconfig`; Git LFS filter; identity delegated to `~/.gitconfig.local` (not tracked) |
+| Cursor rules | `cursor/rules/*.mdc` → `~/.cursor/rules`; always-on and requestable rules |
+| Cursor commands | `cursor/commands/*.md` → `~/.cursor/commands`; slash playbooks (`/git-commit`, `/docs-readme`, `/eval-tune`, and others) |
+| Cursor core | `cursor/core/` → `~/.cursor/core`; authoring canon (style guide, document standard) |
+| Cursor extensions | `cursor/extensions.txt` → `~/.cursor/extensions.txt`; extension IDs installed by `install-extensions.sh` |
+| Config files | `config/*` → `~/.config/` by basename; includes `starship.dark.toml` and `starship.light.toml` |
+| macOS launcher | `launcher/` — builds `CursorWorkspaceLauncher.app` (workspace picker with checkboxes) |
+| CI | `.github/workflows/smoke-check.yml` — runs `tools/smoke-check.sh` on Ubuntu and macOS |
 
 ## Prerequisites
 
 | Tool | Purpose | Install |
 | --- | --- | --- |
-| Homebrew | Package manager for dependencies | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
-| Zsh | Shell that loads `zshrc` | Included by default on macOS |
-| Starship | Theme-aware prompt | `brew install starship` |
-| [fzf](https://github.com/junegunn/fzf) | Fuzzy finder | `brew install fzf` |
-| [zoxide](https://github.com/ajeetdsouza/zoxide) | Directory jumping via `z` | `brew install zoxide` |
-| [eza](https://github.com/eza-community/eza) (optional) | Enhanced `ls` aliases (`ll`, `la`) | `brew install eza` |
-| [nvm](https://github.com/nvm-sh/nvm) (optional) | Lazy-loaded Node runtime in `zshrc` | `brew install nvm` |
-| Git | Version control and `gitconfig` support | `brew install git` or `xcode-select --install` |
-| [Git LFS](https://git-lfs.com) | Tracked [gitconfig](gitconfig) registers `filter.lfs` with `required = true` | `brew install git-lfs` then `git lfs install` |
+| Homebrew | Package manager | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
+| Zsh | Shell | Included on macOS |
+| Git | Version control | `brew install git` or `xcode-select --install` |
+| Git LFS | LFS filter (`required = true` in `gitconfig`) | `brew install git-lfs && git lfs install` |
+| Starship | Prompt | `brew install starship` |
+| fzf | Fuzzy finder | `brew install fzf` |
+| zoxide | Directory jumping (`z`) | `brew install zoxide` |
+| eza (optional) | Enhanced `ls` aliases | `brew install eza` |
+| nvm (optional) | Lazy-loaded Node runtime | `brew install nvm` |
 
-The macOS workspace launcher also requires tools listed in [launcher/lib/config.sh](launcher/lib/config.sh) (`REQUIRED_TOOLS`, `OPTIONAL_ICON_TOOLS`), including `swiftc` and `python3`, separate from this table.
+All of the above are in [Brewfile](Brewfile) (`brew bundle`), along with `shellcheck` and `markdownlint-cli` for local smoke checks.
 
-Declarative installs for the Homebrew CLI tools above: [Brewfile](Brewfile) (`brew bundle`).
+The macOS workspace launcher additionally requires `swiftc`, `osascript`, `defaults`, `killall`, `mktemp`, and `python3`; see [launcher/lib/config.sh](launcher/lib/config.sh).
 
 ## Install
-
-Clone the repository and run the linker script:
 
 ```bash
 git clone https://github.com/ejelome/dotfiles.git
 cd dotfiles
 cp gitconfig.local.example ~/.gitconfig.local
-# Edit ~/.gitconfig.local with your name and email.
+# Edit ~/.gitconfig.local: set user.name and user.email.
 cp zshrc.local.example ~/.zshrc.local
-# Edit ~/.zshrc.local: set GITHUB_TOKEN (needed for GitHub CLI/API tooling on many projects).
+# Edit ~/.zshrc.local: set GITHUB_TOKEN and any machine-specific exports.
 chmod 600 ~/.gitconfig.local ~/.zshrc.local
 ./link.sh
 ```
 
-## Usage
-
-Apply or refresh symlinks:
-
-```bash
-./link.sh
-```
-
-Git user identity lives in `~/.gitconfig.local` (included by the symlinked `gitconfig`). Prefer editing that file so `git config --global user.*` does not write into the repository's `gitconfig` by mistake.
-
-`~/.zshrc.local` is sourced at the end of the symlinked `zshrc`. Put `GITHUB_TOKEN` and other secrets there (see [zshrc.local.example](zshrc.local.example)); do not commit real tokens.
-
-Install shell plugin dependencies outside the repository:
+Then clone the shell plugins (no plugin manager):
 
 ```bash
 mkdir -p ~/.zsh/plugins
@@ -103,54 +98,104 @@ git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/plugins/zsh-au
 git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.zsh/plugins/zsh-syntax-highlighting
 ```
 
-### Cursor extensions
-
-[`cursor/extensions.txt`](cursor/extensions.txt) lists extension IDs in **unpinned** form (`publisher.name` per line). That keeps the manifest small and lets Cursor update extensions normally; fresh machines get current versions from the marketplace. If you prefer **pinned** versions for reproducible installs, maintain the file with `cursor --list-extensions --show-versions` instead (see [MANUAL](MANUAL.md)).
-
-After `./link.sh`, install everything in the manifest (skips already-installed ids):
+Restart your shell or run:
 
 ```bash
-./scripts/ext.sh
+source ~/.zshrc
 ```
 
-The manifest is **not** symlinked; it is only a checklist. Removing an id from `extensions.txt` does **not** uninstall that extension on a machine that already has it.
+## What link.sh does
 
-## Documentation
+`link.sh` is idempotent and non-destructive, and runs in this order:
 
-See [MANUAL](MANUAL.md) for detailed behavior, manual fallback steps, and launcher build commands.
+1. **Strips self-referential nested symlinks** under `CURSOR_CONFIG_ROOT` (`rules/rules`, `commands/commands`, `core/core`) before and after linking. Cursor can recreate these when the open workspace is this repo; the script removes them automatically.
 
-Smoke-check tracked bash and zsh (including `zshrc`, `link.sh`, `scripts/ext.sh`, and launcher libs), Python `dock_update.py`, `gitconfig`, Starship `config/starship*.toml` when `starship` is on `PATH`, and Swift picker template parse on macOS when `swiftc` is available. Verifies `cursor/commands` and `cursor/skills-cursor` are populated and fails if nested `cursor/rules/rules`, `cursor/skills-cursor/skills-cursor`, or `cursor/commands/commands` exists (same guard as `link.sh`); it does not validate `cursor/rules/*.mdc` content. When `shellcheck` or `markdownlint` is installed, runs those on the matching paths (Markdown lint skips `cursor/rules/`).
+2. **Backs up any existing non-symlink** at each destination by renaming it to `<dest>.bak` before overwriting.
+
+3. **Creates symlinks:**
+   - `zshrc` → `~/.zshrc`
+   - `gitconfig` → `~/.gitconfig`
+   - Each file under `config/` → `~/.config/<basename>`
+   - `cursor/rules/` → `~/.cursor/rules` (when the directory exists under `CURSOR_CONFIG_ROOT`)
+   - `cursor/commands/` → `~/.cursor/commands` (when the directory exists)
+   - `cursor/core/` → `~/.cursor/core` (when the directory exists)
+   - `cursor/extensions.txt` → `~/.cursor/extensions.txt` (when the file exists)
+
+4. **Builds `CursorWorkspaceLauncher.app`** on macOS by running `launcher/setup-cursor-workspace-launcher.sh`. Skipped on Linux or if the script is absent.
+
+5. **Syncs Cursor extensions** by running `tools/cursor-cli/install-extensions.sh` when the `cursor` CLI is on `PATH` and `~/.cursor/extensions.txt` exists. Set `SKIP_CURSOR_EXTENSIONS=1` to skip this step.
+
+**What link.sh does not do:** `link.sh` does not modify any file under `$HOME` that is not a symlink destination listed above. `link.sh` does not run destructive helpers (e.g. `clear-chat.sh`). `link.sh` does not touch `~/.cursor/skills-cursor/` (managed by Cursor itself).
+
+To keep Cursor config outside this clone, set `CURSOR_CONFIG_ROOT` to an absolute path before running `link.sh`:
 
 ```bash
-./scripts/qa.sh
+CURSOR_CONFIG_ROOT=/path/to/cursor-config ./link.sh
 ```
 
-## Agent context
+To roll back all symlinks:
 
-See [AGENTS](AGENTS.md) for where rules and skills live, how `link.sh` wires Cursor, and how to avoid duplicating always-on rules in `Cursor Settings → Rules for AI`. Tracked skills under `cursor/skills-cursor/` include hooks, CLI config, and status line helpers alongside rule and command authoring guides.
+```bash
+[ -L ~/.zshrc ] && rm ~/.zshrc
+[ -L ~/.gitconfig ] && rm ~/.gitconfig
+[ -L ~/.cursor/rules ] && rm ~/.cursor/rules
+[ -L ~/.cursor/commands ] && rm ~/.cursor/commands
+[ -L ~/.cursor/core ] && rm ~/.cursor/core
+[ -L ~/.cursor/extensions.txt ] && rm ~/.cursor/extensions.txt
+```
 
-## Conventions
+Then restore any `.bak` files manually. Full recovery steps are in [MANUAL.md](MANUAL.md).
 
-- Edit tracked files in this repository, not the symlink destinations
-- `link.sh` links `zshrc` to `~/.zshrc` and `gitconfig` to `~/.gitconfig`
-- Git identity files live in `~/.gitconfig.local` (see [gitconfig.local.example](gitconfig.local.example))
-- Shell secrets live in `~/.zshrc.local` (see [zshrc.local.example](zshrc.local.example))
-- `link.sh` links files in `config/` to `~/.config/` by basename
-- `link.sh` links `cursor/rules/` to `~/.cursor/rules` and `cursor/skills-cursor/` to `~/.cursor/skills-cursor`
-- `link.sh` links `cursor/commands/` to `~/.cursor/commands`
-- `cursor/extensions.txt` is tracked for repeatable Cursor extension installs
-- Run `./scripts/ext.sh` after `./link.sh` when installing extensions (not linked by `link.sh`)
-- Do not nest `cursor/rules/rules/` or `cursor/skills-cursor/skills-cursor/` in the repo (recursive symlink hazard)
-- Do not nest `cursor/commands/commands` in the repo (same hazard)
-- `link.sh` and [MANUAL](MANUAL.md) document the flat layout
-- On macOS, `link.sh` runs `launcher/setup-cursor-workspace-launcher.sh` to build or update `CursorWorkspaceLauncher.app`
-- This repo does not use a root `.cursorrules` file; Cursor loads `cursor/rules/*.mdc` from this tree via `link.sh`
+## Usage
+
+**Re-run after pulling changes:**
+
+```bash
+./link.sh
+```
+
+**Validate the repo layout (same checks as CI):**
+
+```bash
+./tools/smoke-check.sh
+```
+
+**Git identity:** Edit `~/.gitconfig.local` (included by the symlinked `gitconfig`). Never put name or email in the tracked `gitconfig`.
+
+**Secrets and machine-specific exports:** Edit `~/.zshrc.local` (sourced at the end of `zshrc`). Never commit tokens.
+
+**Cursor extensions:** To export the current extension list:
+
+```bash
+cursor --list-extensions > cursor/extensions.txt
+```
+
+To install from the manifest manually:
+
+```bash
+./tools/cursor-cli/install-extensions.sh
+```
+
+**Clear Cursor chat history** (destructive — not run by `link.sh`): quit Cursor first, then:
+
+```bash
+./tools/cursor-cli/clear-chat.sh
+```
+
+**Cursor slash commands** install to `~/.cursor/commands` and are available as `/name` in the Cursor chat panel. The full catalog is [cursor/commands/commands.md](cursor/commands/commands.md).
+
+## Contributing
+
+Pull requests are welcome. For larger changes, open an issue first to align on direction before investing time.
+
+Edit tracked files in this clone, not symlink targets under `$HOME`. Run `./tools/smoke-check.sh` before submitting. See [AGENTS.md](AGENTS.md) for the agent on-ramp and [OWNERS.md](OWNERS.md) for path ownership.
+
+Do not nest `rules/rules/`, `commands/commands/`, or `core/core/` under `CURSOR_CONFIG_ROOT` — this creates a symlink loop that `link.sh` and `smoke-check.sh` guard against.
 
 ## Status
 
-> Last updated: 2026-04-05
+No rolling "last updated" line here (manual upkeep only); chronological history: [CHANGELOG.md](CHANGELOG.md).
 
-The setup is stable for daily use, and symlink workflows are verified by `link.sh`.
-Cursor rules, bundled skills, slash commands, and launcher tooling stay the active surface.
+Stable for daily macOS shell, Git, and Cursor workflows via `link.sh` and `CURSOR_CONFIG_ROOT`; docs-first rules, slash commands, and Agent Skills ship under `cursor/`.
 
-See [CHANGELOG](CHANGELOG.md) for full history.
+Ongoing refinement covers [core canon](cursor/core/), the slash catalog (`/eval-tune` plus `/eval-uid`, `/eval-wse`, `/eval-igd`, and `/eval-ops` in [cursor/commands/commands.md](cursor/commands/commands.md)), smoke-check CI, the macOS workspace launcher, and path roles in [OWNERS.md](OWNERS.md).
