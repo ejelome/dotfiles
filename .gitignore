@@ -18,8 +18,16 @@ launcher/workspace-launcher.local.sh
 # Generated macOS app bundles
 *.app
 
-# Never nest ~/.cursor-style self-symlinks inside the repo (`rules/rules`, `skills-cursor/skills-cursor`, `commands/commands`, `core/core`)
-cursor/rules/rules/
-cursor/skills-cursor/skills-cursor/
+# Never nest ~/.cursor-style self-symlinks inside the repo.
+cursor/rules/rules
 cursor/commands/commands
-cursor/core/core
+cursor/_functions/_functions
+cursor/_mdc/_mdc
+cursor/_core/_core
+cursor/_tests/_tests
+
+# Cursor-managed runtime folder should never be authored in this repo.
+cursor/skills-cursor/
+
+# Local collaboration records are project-session state, not repo source.
+.collabs/

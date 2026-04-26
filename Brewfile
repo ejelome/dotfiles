@@ -9,3 +9,8 @@ brew "eza"
 brew "nvm"
 brew "shellcheck"
 brew "markdownlint-cli"
+
+# IDE + terminal coding agents.
+cask "cursor"
+cask "claude-code"
+cask "codex"

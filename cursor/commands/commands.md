@@ -1,57 +1,106 @@
 # /commands
 
-List every slash command under `cursor/commands/` by basename and purpose; use when you need the canonical name or invocation syntax for any installed command.
+List public slash commands under `~/.cursor/commands/` and their private function routes; use when you need canonical invocation syntax.
+
+Contract: [cursor/_core/command.md](../_core/command.md)
 
 ## Trigger
 
-**Slash:** `/commands` **Phrases:** `cursor commands list`, `slash commands`, `what commands in cursor/commands`, `commands-index`
+**Slash:** `/commands`
+**Phrases:** `cursor commands list`, `slash commands`, `what commands in cursor/commands`, `commands-index`
 
 ## Steps
 
 1. Read this table when the user needs the canonical name for a playbook or the list of installed slashes.
-2. Open the linked `*.md` source under `CURSOR_CONFIG_ROOT/commands/` for full behavior.
+2. Open the public command file under `CURSOR_CONFIG_ROOT/commands/` for routing behavior.
+3. Open the linked private function file under `CURSOR_CONFIG_ROOT/_functions/` for full route behavior.
 
 ## Notes
 
-Playbooks follow `{group}-{name}.md` per [style-guide](../core/style-guide.md). The catalog is **`commands.md`** with slash **`/commands`** by convention. Cursor exposes **`/<basename>`** without `.md`. Install targets live under **`~/.cursor/commands/`** via **`CURSOR_CONFIG_ROOT`**.
+Public slash files live only as `commands/<namespace>.md`. Private route functions live as `_functions/<namespace>/<route>.md` so Cursor does not expose routes as standalone slashes such as `/assess`.
+
+Invoke routes as `/namespace route ...`; for example, `/docs assess @README.md` loads `commands/docs.md`, resolves `assess`, then executes `_functions/docs/assess.md` with the remaining input and attachments.
+
+Operational function playbooks may depend on router rules in `../rules/{auto,shared}.mdc` and private rule files under `../_mdc/{auto,shared}/*.mdc`. `/test` may also require `~/.cursor/_tests/commands.md`, `~/.cursor/_tests/rules.md`, `~/.cursor/_tests/_functions.md`, `~/.cursor/_tests/_mdc.md`, `~/.cursor/_tests/_core.md`, `~/.cursor/_tests/_settings.md`, and `REPOSITORY.md`.
 
 **Invocation notes by command:**
 
-- **`/git-issue`** — requires subcommand **`create`** or **`implement`**; bare `/git-issue` is incomplete.
-- **`/git-commit`** — atomic splits or squash `FROM..TO`; infers mode and asks once if stuck.
-- **`/docs-assess`**, **`/docs-compare`**, **`/docs-compact`** — ask target or format once (Markdown only).
-- **`/eval-tune`** — rubric-driven meta QA with approval-gated adaptation; may route to specialist commands.
-- **`/eval-uid`** — `<image>` primary; optional `<project>` for vocabulary only. With attachment, trailing token is `<project>`; without attachment, first token is `<image>`, second optional is `<project>`; no image and no path → prompt to provide one.
-- **`/eval-wse`** — `<project>` (defaults to workspace); non-game web default; Phaser repos use the non-game slice.
-- **`/eval-igd`** — `<project>` (defaults to workspace); game engineering; Phaser when present, else game subtree.
-- **`/eval-ops`** — `<project>` (defaults to workspace); build and operations scripts, Vite output and path checks, CI and deploy mechanics.
+- **`/collab <init | join | speak | next | prev | set | list | use | open | close | kick | delete | summarize | execute>`** — create, join, contribute to, move between phases, edit metadata, manage active collabs, reopen/close, manage participants, archive/delete, summarize, or execute assigned action-plan items for a moderated collaboration record; mod contributions require human-authored text passed as `<message>` to `/collab speak` after joining with `/collab join --role mod`.
+- **`/content revamp <audit | review | edit | sync | gate>`** — staged content revamp workflow; `edit` and `sync` require `<scope>`.
+- **`/docs readme`** — create or update repo `README*` or `readme*` files.
+- **`/docs manual`** — create or update repo-root `MANUAL.md` from traced automation.
+- **`/docs changelog <atomic | squash>`** — `atomic` or `squash` mode keyword required.
+- **`/docs assess <path>`** — Markdown path or attachment; classify and rewrite.
+- **`/docs compare <path1> <path2>`** — two Markdown paths or attachments; no compact final.
+- **`/docs compact <path>`** — Markdown path or attachment; preserve facts while compacting.
+- **`/git commit <atomic | squash <from> <to>>`** — split working tree or squash an inclusive range.
+- **`/git issue <create | implement> <goal>`** — create issue handoff or implement grounded work.
+- **`/eval uid <image> <project>`** — screenshot UI review; attachment counts as `image`.
+- **`/eval wse <project>`** — web stack review.
+- **`/eval igd <project>`** — game engineering review.
+- **`/eval ops <project>`** — build and operations review.
+- **`/eval tune <uid | wse | igd | ops> ...`** — specialist pass plus cross-cutting Criteria audit.
+- **`/test <commands | rules | _functions | _mdc | _core | _settings | repo | all>`** — run one QA harness target or all in sequence.
 
-**Related principal workflows (`/eval-uid`, `/eval-wse`, `/eval-igd`, `/eval-ops`):**
+**Related principal workflows:**
 
-| Slash | Source of truth | Cross-stack |
+| Route | Source of truth | Cross-stack |
 | --- | --- | --- |
-| `/eval-uid` | `<image>` (+ optional `<project>` for vocabulary only) | — |
-| `/eval-wse` | `<project>` — checked-in **web** tree | On **Phaser** repos: **non-game** aspects (host, build, shell, BFF, DOM outside canvas). |
-| `/eval-igd` | `<project>` — **game** tree | On **non-Phaser** repos: **game** slice (loop, canvas, assets) only. |
-| `/eval-ops` | `<project>` — checked-in **build/ops** tree | Owns `tools/`, Vite output/path correctness, and CI/deploy mechanics outside WSE/IGD/UID-owned surfaces. |
+| `/eval uid` | `image` and `project` both required; attachment counts as `image`; with attachment first token is `project` | Screenshot-only by default. |
+| `/eval wse` | `project` — checked-in web tree | On Phaser repos: non-game aspects such as host, build, shell, BFF, and DOM outside canvas. |
+| `/eval igd` | `project` — game tree | On non-Phaser repos: game slice such as loop, canvas, and assets only. |
+| `/eval ops` | `project` — checked-in build/ops tree | Owns `tools/`, Vite output/path correctness, and CI/deploy mechanics outside WSE/IGD/UID-owned surfaces. |
 
 **Commands catalog:**
 
-| Slash | Source | Purpose |
-| --- | --- | --- |
-| `/commands` | [commands](commands.md) | This catalog (all slash playbooks in `cursor/commands/`). |
-| `/docs-readme` | [docs-readme](docs-readme.md) | Create or update repo `README*` or `readme*` files (no matching rule under `cursor/rules/`). |
-| `/docs-manual` | [docs-manual](docs-manual.md) | Create or update repo-root `MANUAL.md` (script-traced fallback; no other paths). |
-| `/docs-changelog` | [docs-changelog](docs-changelog.md) | Create or update changelog or release-note style files (paths in that playbook); supports mode shorthands like `/docs-changelog squash` and `/docs-changelog atomic`. |
-| `/docs-assess` | [docs-assess](docs-assess.md) | Ask target (Markdown document), then classify and rewrite per **Markdown document route**. |
-| `/docs-compare` | [docs-compare](docs-compare.md) | Ask format (Markdown), then provide a preservation/diff report for two markdown versions (no compact final). |
-| `/docs-compact` | [docs-compact](docs-compact.md) | Ask format (Markdown), then compare-and-compact per **Markdown route**. |
-| `/git-issue` | [git-issue](git-issue.md) | `/git-issue create` (prefill, four phases) or `/git-issue implement` (execution); bare `/git-issue` is incomplete—see playbook. |
-| `/git-commit` | [git-commit](git-commit.md) | Atomic multi-commit or squash `FROM..TO`; infer when possible; ask once if stuck. |
-| `/eval-tune` | [eval-tune](eval-tune.md) | Rubric-driven QA meta-orchestrator; can route to specialist workflows and uses approval-gated learning. |
-| `/eval-uid` | [eval-uid](eval-uid.md) | Principal User Interface Designer (**UID**) — `<image>` primary; optional `<project>`; if an image is attached, first arg is `<project>` only. |
-| `/eval-wse` | [eval-wse](eval-wse.md) | Principal Web Software Engineer (**WSE**) — `<project>` (defaults to workspace); web stack; **non-game** default; **Phaser** repos → host/build/shell slice. |
-| `/eval-igd` | [eval-igd](eval-igd.md) | Principal Game Developer (**IGD**) — `<project>` (defaults to workspace); **game** engineering; **Phaser** when present; **non-Phaser** → game subtree; ship path. |
-| `/eval-ops` | [eval-ops](eval-ops.md) | Principal Build and Operations Engineer (**OPS**) — `<project>` (defaults to workspace); `tools/` scripts, Vite build-output/asset-path correctness, and CI/deploy pipeline mechanics. |
+<!-- BEGIN GENERATED:COMMANDS_ROSTER -->
+_Generated by `tools/cursor/sync-commands-catalog.sh`; do not edit this block by hand._
 
-Project onboarding files (for example **`AGENTS.md`** at the **application** repository root) are separate from this catalog; they describe the repo you are editing, not global **`~/.cursor`** config.
+| Slash | Signature | Public router | Private functions |
+| --- | --- | --- | --- |
+| `/collab` | `/collab <init \| join \| speak \| next \| prev \| set \| list \| use \| open \| close \| kick \| delete \| summarize \| execute>` | [collab](collab.md) | [close](../_functions/collab/close.md), [delete](../_functions/collab/delete.md), [execute](../_functions/collab/execute.md), [init](../_functions/collab/init.md), [join](../_functions/collab/join.md), [kick](../_functions/collab/kick.md), [list](../_functions/collab/list.md), [next](../_functions/collab/next.md), [open](../_functions/collab/open.md), [prev](../_functions/collab/prev.md), [set](../_functions/collab/set.md), [speak](../_functions/collab/speak.md), [summarize](../_functions/collab/summarize.md), [use](../_functions/collab/use.md) |
+| `/content` | `/content <revamp>` | [content](content.md) | [revamp](../_functions/content/revamp.md) |
+| `/docs` | `/docs <assess \| changelog \| compact \| compare \| manual \| readme>` | [docs](docs.md) | [assess](../_functions/docs/assess.md), [changelog](../_functions/docs/changelog.md), [compact](../_functions/docs/compact.md), [compare](../_functions/docs/compare.md), [manual](../_functions/docs/manual.md), [readme](../_functions/docs/readme.md) |
+| `/eval` | `/eval <uid \| wse \| igd \| ops \| tune>` | [eval](eval.md) | [igd](../_functions/eval/igd.md), [notes](../_functions/eval/notes.md), [ops](../_functions/eval/ops.md), [tune](../_functions/eval/tune.md), [uid](../_functions/eval/uid.md), [wse](../_functions/eval/wse.md) |
+| `/git` | `/git <commit \| issue>` | [git](git.md) | [commit](../_functions/git/commit.md), [issue](../_functions/git/issue.md) |
+| `/test` | `/test <commands \| rules \| _functions \| _mdc \| _core \| _settings \| repo \| all>` | [test](test.md) | [run](../_functions/test/run.md) |
+
+| Route | Private function |
+| --- | --- |
+| `/collab close` | [collab/close.md](../_functions/collab/close.md) |
+| `/collab delete` | [collab/delete.md](../_functions/collab/delete.md) |
+| `/collab execute` | [collab/execute.md](../_functions/collab/execute.md) |
+| `/collab init` | [collab/init.md](../_functions/collab/init.md) |
+| `/collab join` | [collab/join.md](../_functions/collab/join.md) |
+| `/collab kick` | [collab/kick.md](../_functions/collab/kick.md) |
+| `/collab list` | [collab/list.md](../_functions/collab/list.md) |
+| `/collab next` | [collab/next.md](../_functions/collab/next.md) |
+| `/collab open` | [collab/open.md](../_functions/collab/open.md) |
+| `/collab prev` | [collab/prev.md](../_functions/collab/prev.md) |
+| `/collab set` | [collab/set.md](../_functions/collab/set.md) |
+| `/collab speak` | [collab/speak.md](../_functions/collab/speak.md) |
+| `/collab summarize` | [collab/summarize.md](../_functions/collab/summarize.md) |
+| `/collab use` | [collab/use.md](../_functions/collab/use.md) |
+| `/content revamp` | [content/revamp.md](../_functions/content/revamp.md) |
+| `/docs assess` | [docs/assess.md](../_functions/docs/assess.md) |
+| `/docs changelog` | [docs/changelog.md](../_functions/docs/changelog.md) |
+| `/docs compact` | [docs/compact.md](../_functions/docs/compact.md) |
+| `/docs compare` | [docs/compare.md](../_functions/docs/compare.md) |
+| `/docs manual` | [docs/manual.md](../_functions/docs/manual.md) |
+| `/docs readme` | [docs/readme.md](../_functions/docs/readme.md) |
+| `/eval igd` | [eval/igd.md](../_functions/eval/igd.md) |
+| `/eval notes` | [eval/notes.md](../_functions/eval/notes.md) |
+| `/eval ops` | [eval/ops.md](../_functions/eval/ops.md) |
+| `/eval tune` | [eval/tune.md](../_functions/eval/tune.md) |
+| `/eval uid` | [eval/uid.md](../_functions/eval/uid.md) |
+| `/eval wse` | [eval/wse.md](../_functions/eval/wse.md) |
+| `/git commit` | [git/commit.md](../_functions/git/commit.md) |
+| `/git issue` | [git/issue.md](../_functions/git/issue.md) |
+| `/test` | [test/run.md](../_functions/test/run.md) |
+<!-- END GENERATED:COMMANDS_ROSTER -->
+
+Project onboarding files, such as `AGENTS.md` at an application repository root, are separate from this catalog. They describe the repo being edited, not global `~/.cursor` config.
+
+## Maintainer QA
+
+Run [_tests/commands](../_tests/commands.md) after any change in `commands/`, and run [_tests/_functions](../_tests/_functions.md) for changes in `_functions/`. The local contract covers public slash rosters, function rosters, links, headings, self-containment, rules alignment, and catalog sync.

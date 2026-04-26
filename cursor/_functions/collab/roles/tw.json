@@ -1,0 +1,10 @@
+{
+  "acronym": "tw",
+  "display_name": "Technical Writer",
+  "concerns": [
+    "clarity",
+    "conciseness",
+    "accuracy",
+    "developer experience"
+  ]
+}

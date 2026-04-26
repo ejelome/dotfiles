@@ -1,0 +1,11 @@
+{
+  "acronym": "pe",
+  "display_name": "Platform Engineer",
+  "concerns": [
+    "effectiveness",
+    "efficiency",
+    "completeness",
+    "optimization",
+    "developer experience"
+  ]
+}

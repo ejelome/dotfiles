@@ -1,0 +1,14 @@
+{
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.closeEmptyGroups": false,
+  "window.confirmBeforeClose": "keyboardOnly",
+  "workbench.colorTheme": "Monokai",
+  "editor.minimap.enabled": true,
+  "explorer.confirmDelete": false,
+  "cursor.cpp.disabledLanguages": [
+    "plaintext"
+  ],
+  "git.autofetch": true,
+  "claudeCode.preferredLocation": "sidebar",
+  "git.openRepositoryInParentFolders": "always"
+}

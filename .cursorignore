@@ -1,4 +1,7 @@
 # Keep the index small; this tree is mostly small text files.
 # Extend if generated or vendored blobs land in-repo.
+# Exclude large binary reference assets.
 
 .git
+screenshot.png
+launcher/icons/

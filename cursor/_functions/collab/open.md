@@ -1,0 +1,26 @@
+# /collab open
+
+Reopen a closed collaboration record in the registry when additional discussion or execution is required.
+
+## Trigger
+
+**Slash:** `/collab open`
+**Signature:** `/collab open`
+**Phrases:** collab open, reopen collab, reopen collaboration record
+
+## Steps
+
+1. Resolve the target collab with **Registry targeting** in **Notes**.
+2. Read `.collabs/registry.json` and the resolved transcript path. If either is unreadable, **ABORT**: record unreadable; name the path.
+3. If the registry status is `open`, report that the record is already open and stop.
+4. If the collab is archived, **ABORT**: archived records must be restored before reopening.
+5. Update the registry status to `open`.
+6. Mirror transcript `**Status:** closed` back to `**Status:** open`.
+7. Set `active_collab_id` to the reopened collab id.
+8. Stop after updating registry and transcript.
+
+## Notes
+
+- **Parameters:** target collab slug, id, or legacy transcript path as the first token after `open`; when absent, resolved per **Registry targeting** in **Notes**.
+- **Registry targeting:** Resolve the target collab from `.collabs/registry.json`, using `tools/collab/registry.py` as the shared helper. When the first token after the route is present, treat it as a collab slug or id; if that token starts with `.` or `/` and ends with `.md`, match it against `transcript_path` as a legacy explicit target. Otherwise use `active_collab_id`. If the registry is unreadable or invalid, the token does not match any entry, or `active_collab_id` is empty, **ABORT**: registry target unavailable; name the registry field or token.
+- **Ownership boundary:** `status` is owned by `open` and `close`. `/collab set` must not change it during normal operation.
