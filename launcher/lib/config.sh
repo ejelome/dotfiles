@@ -33,4 +33,6 @@ typeset -ra OPTIONAL_ICON_TOOLS=(
   iconutil
 )
 
-[[ -f "${LAUNCHER_USER_CONFIG}" ]] && source "${LAUNCHER_USER_CONFIG}"
+if [[ -f "${LAUNCHER_USER_CONFIG}" ]]; then
+  source "${LAUNCHER_USER_CONFIG}"
+fi

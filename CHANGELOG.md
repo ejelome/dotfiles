@@ -5,6 +5,20 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-04-26] - 2026-04-26
+
+### Added
+
+- A canonical configuration tree owns settings, commands, and rules.
+- Automated checks cover projection, documentation, and local tools.
+- Manual fallback helpers mirror the primary linking behavior.
+
+### Changed
+
+- Local setup rejects nested or ambiguous configuration layouts.
+- Workspace guides describe ownership and validation boundaries.
+- Shell configuration supports plugin installation.
+
 ## [2026-04-11] - 2026-04-11
 
 ### Added
@@ -77,7 +91,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.04.11...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.04.26...HEAD
+[2026-04-26]: https://github.com/ejelome/dotfiles/compare/v2026.04.11...v2026.04.26
 [2026-04-11]: https://github.com/ejelome/dotfiles/compare/v2026.04.05...v2026.04.11
 [2026-04-05]: https://github.com/ejelome/dotfiles/compare/v2026.03.29...v2026.04.05
 [2026-03-29]: https://github.com/ejelome/dotfiles/compare/v2026.03.22...v2026.03.29

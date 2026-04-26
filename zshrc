@@ -7,9 +7,9 @@
 # -----------------------------------------------------------------------------
 export PATH="$HOME/.local/bin:$PATH"
 
-# Dotfiles checkout: when ~/.zshrc resolves into the repo, put tools/cursor-cli on PATH.
+# Dotfiles checkout: when ~/.zshrc resolves into the repo, put helper scripts on PATH.
 _dotfiles_zshrc="${ZDOTDIR:-$HOME}/.zshrc"
-if [[ -e "$_dotfiles_zshrc" ]] && [[ -f "${_dotfiles_zshrc:A:h}/tools/cursor-cli/install-extensions.sh" ]]; then
+if [[ -e "$_dotfiles_zshrc" ]] && [[ -f "${_dotfiles_zshrc:A:h}/tools/cursor-cli/clear-chat.sh" ]]; then
   export DOTFILES_ROOT="${_dotfiles_zshrc:A:h}"
   export PATH="$DOTFILES_ROOT/tools/cursor-cli:$PATH"
 fi
@@ -45,7 +45,7 @@ fi
 # -----------------------------------------------------------------------------
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 nvm() {
-  unfunction nvm node npm npx 2>/dev/null
+  unfunction nvm node npm npx corepack pnpm yarn 2>/dev/null
   local _nvm_sh=""
   if [[ -s /opt/homebrew/opt/nvm/nvm.sh ]]; then
     _nvm_sh=/opt/homebrew/opt/nvm/nvm.sh
@@ -60,6 +60,9 @@ nvm() {
 node() { nvm; node "$@"; }
 npm() { nvm; npm "$@"; }
 npx() { nvm; npx "$@"; }
+corepack() { nvm; corepack "$@"; }
+pnpm() { nvm; pnpm "$@"; }
+yarn() { nvm; yarn "$@"; }
 
 # -----------------------------------------------------------------------------
 # 5. Plugins — autosuggestions → fzf → syntax-highlighting (no plugin manager)

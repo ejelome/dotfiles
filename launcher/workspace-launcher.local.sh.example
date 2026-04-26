@@ -5,11 +5,11 @@
 # Add rows for whatever folders you use; this example does not assume other fixed paths on disk.
 
 typeset -ga WORKSPACE_ENTRIES=(
-  "My project|$HOME/Projects/myproject"
+  "Example workspace|/path/to/your-workspace"
 )
 
 # Picker opens on this label; leave empty to use the first entry.
-DEFAULT_WORKSPACE_LABEL="My project"
+DEFAULT_WORKSPACE_LABEL="Example workspace"
 
 # Open vs Append is chosen in the picker UI (mode radio buttons), then OK.
 

@@ -1,0 +1,11 @@
+{
+  "acronym": "mod",
+  "display_name": "Moderator",
+  "concerns": [
+    "scope",
+    "sequencing",
+    "framing",
+    "pacing",
+    "integrity"
+  ]
+}
