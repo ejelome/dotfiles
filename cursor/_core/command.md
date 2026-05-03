@@ -133,13 +133,13 @@ One sentence — purpose of the route and when to use it.
 | **P2** | Link hygiene | No checkout-path literal leaks or forbidden parent links |
 | **P3** | Layout and length | Each command/function `*.md` <= 250 lines |
 | **P4** | Title and opening line | Exactly one H1 after fence strip |
-| **P5** | Link hygiene | Links stay inside allowed command, function, and rules paths |
+| **P5** | Link hygiene | Links stay inside allowed command, function, role, core, and rules paths |
 | **P6** | Required sections | `## Trigger` -> `## Steps` -> `## Notes` in order; each present once |
 | **P7** | Catalog | `commands.md` links every public command and private function |
 | **P8** | Title and opening line | H1 text is `# /<namespace>` or `# /<namespace> <route>` |
 | **P9** | Trigger contract | Every command/function file except `commands.md` contains `**Slash:**` |
 | **P10** | Signature and Notes contract | Signature placeholders, stage signatures, and Notes ordering stay consistent |
-| **P11** | Self-containment | Required dependencies stay inside `commands/`, `_functions/`, `../rules/{auto,shared}.mdc`, `../_mdc/{auto,shared}/*.mdc`, or explicit QA harness targets |
+| **P11** | Self-containment | Required dependencies stay inside `commands/`, `_functions/`, `_roles/`, `_core/`, `../rules/{auto,shared}.mdc`, `../_mdc/{auto,shared}/*.mdc`, or explicit QA harness targets |
 
 ## Layout and length
 
@@ -148,10 +148,10 @@ One sentence — purpose of the route and when to use it.
 
 ## Link hygiene
 
-- Public command links may target sibling command files, `../_functions/**/*.md`, fragment-only anchors, `../rules/`, `../_mdc/`, and optional `https://` / `http://` context links.
-- Private function links may target sibling `_functions/**/*.md`, `../../_mdc/**/*.mdc`, fragment-only anchors, and optional `https://` / `http://` context links.
-- Required authority for command behavior may come only from public command files, private function files, rule router files under `../rules/`, and private rule files under `../_mdc/`.
-- `_functions/test/run.md` may also require `~/.cursor/_tests/commands.md`, `~/.cursor/_tests/rules.md`, `~/.cursor/_tests/_functions.md`, `~/.cursor/_tests/_mdc.md`, `~/.cursor/_tests/_core.md`, `~/.cursor/_tests/_settings.md`, `~/.cursor/_tests/_tests.md`, and `REPOSITORY.md` at repo root.
+- Public command links may target sibling command files, `../_functions/**/*.md`, `../_core/*.md`, fragment-only anchors, `../rules/`, `../_mdc/`, and optional `https://` / `http://` context links.
+- Private function links may target sibling `_functions/**/*.md`, `../../_core/*.md`, `../../_roles/*.json`, `../../_mdc/**/*.mdc`, fragment-only anchors, and optional `https://` / `http://` context links.
+- Required authority for command behavior may come only from public command files, private function files, shared role JSON under `_roles/`, core contracts under `_core/`, rule router files under `../rules/`, and private rule files under `../_mdc/`.
+- `_functions/test/run.md` may also require `~/.cursor/_tests/commands.md`, `~/.cursor/_tests/rules.md`, `~/.cursor/_tests/_functions.md`, `~/.cursor/_tests/_mdc.md`, `~/.cursor/_tests/_core.md`, `~/.cursor/_tests/_roles.md`, `~/.cursor/_tests/_settings.md`, `~/.cursor/_tests/_tests.md`, and `REPOSITORY.md` at repo root.
 - External URLs are optional context only and never required authorities.
 
 ## QA cadence

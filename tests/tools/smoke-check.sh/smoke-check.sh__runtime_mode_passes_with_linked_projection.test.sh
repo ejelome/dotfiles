@@ -32,4 +32,4 @@ output="$({
 assert_contains "$output" "smoke-check: runtime projection (SMOKE_CHECK_RUNTIME=1)"
 assert_contains "$output" "smoke-check: OK"
 
-echo "PASS: smoke-check runtime mode passes with linked runtime projection"
+echo "PASS: smoke-check runtime mode passes with copied runtime projection"

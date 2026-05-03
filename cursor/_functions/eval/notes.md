@@ -17,6 +17,7 @@ Serve as the append-only log for QA learning notes approved during `/eval tune` 
 ## Notes
 
 - **Parameters:** no arguments accepted.
+- **Internal-only:** Do not invoke `/eval notes` directly; this route is loaded exclusively by `/eval tune`.
 - **Authority:** `/eval tune` owns approved appends to this file.
 - **Append-only:** Never replace or rewrite prior audit sections.
 - **Append behavior:** When learning is enabled and the user confirms note retention, append one section under `## QA audit — YYYY-MM-DD`; add a counter suffix when the same date heading already exists.

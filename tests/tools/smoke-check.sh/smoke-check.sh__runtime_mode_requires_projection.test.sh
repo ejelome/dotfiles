@@ -26,8 +26,8 @@ output="$({
 status=$?
 set -e
 
-[[ "$status" -ne 0 ]] || fail "expected smoke-check runtime mode to fail without linked runtime projection"
+[[ "$status" -ne 0 ]] || fail "expected smoke-check runtime mode to fail without copied runtime projection"
 assert_contains "$output" "smoke-check: runtime projection (SMOKE_CHECK_RUNTIME=1)"
 assert_contains "$output" "runtime projection missing destination"
 
-echo "PASS: smoke-check runtime mode requires linked runtime projection"
+echo "PASS: smoke-check runtime mode requires copied runtime projection"

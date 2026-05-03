@@ -173,6 +173,13 @@ Examples: `_functions/git/commit.md`, `_functions/eval/igd.md`, `_functions/docs
 |Skills         |`SKILL.md` inside named folder              |Host-assigned path under the editor’s skills directory (not part of the `_core/` canon tree)             |
 |Devblog entries|`{n}-{slug}.md`                             |`1-week.md`, `0-foreword.md` (position 0 is reserved for the foreword; slug is fixed as `foreword`)|
 |Course notes   |`notes-{variant}-{course}.md`               |`notes-full-domain-driven-design.md`                                                               |
+|Test harnesses |`tests/<source-path>/<source-name>__<behavior>.test.sh`|`tests/cursor/_roles/roles__json_schema.test.sh`                                      |
+
+### JSON data files
+
+Owned internal JSON data files use `camelCase` property names. This rule applies to all repository-owned JSON data files. Tool-governed config files — any JSON file whose keys are consumed or required by an external tool or runtime (Cursor settings, markdownlint config, VS Code keybindings) — keep the key names required by that tool.
+
+Examples of owned internal JSON: `cursor/_roles/*.json` (`key`, `displayName`, `concerns`), `.collabs/registry.json` (`schemaVersion`, `activeCollabId`, `turnOrder`).
 
 ## Related documents
 

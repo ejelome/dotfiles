@@ -13,6 +13,7 @@ required_sources=(
   "tools/cursor-cli/clear-chat.sh"
   "tools/cursor-cli/factory-reset.sh"
   "tools/cursor/sync-commands-catalog.sh"
+  "tools/cursor/sync-roles-roster.sh"
   "tools/lib/cursor-layout.sh"
   "tools/lib/link-targets.sh"
   "tools/manual/manual-link-fallback.sh"

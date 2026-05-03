@@ -10,5 +10,7 @@
   ],
   "git.autofetch": true,
   "claudeCode.preferredLocation": "sidebar",
-  "git.openRepositoryInParentFolders": "always"
+  "git.openRepositoryInParentFolders": "always",
+  "explorer.confirmDragAndDrop": false,
+  "explorer.confirmPasteNative": false
 }

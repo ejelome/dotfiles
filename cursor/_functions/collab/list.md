@@ -5,18 +5,31 @@ List the registry-backed collabs so the moderator can inspect status and active 
 ## Trigger
 
 **Slash:** `/collab list`
-**Signature:** `/collab list`
+**Signature:** `/collab list [--status <open|closed|archived>]`
 **Phrases:** collab list, list collaborations, list collab records
 
 ## Steps
 
 1. Read `.collabs/registry.json`. If unreadable, **ABORT**: registry unreadable; name the path.
 2. Validate the registry structure and active pointer.
-3. Return one line per collab with active marker, slug, status, active phase, and participant count.
-4. Stop without mutating the registry or any transcript.
+3. Apply the `--status` filter when present: include only collabs whose `status` matches the given value. If the value is not one of `open`, `closed`, or `archived`, **ABORT**: invalid status filter; name the value.
+4. Sort the filtered list: active collab first, then by descending registry insertion order (`#N`), then alphabetically by slug as a tiebreaker.
+5. Emit one multi-line entry per collab in the **Output shape** in **Notes**.
+6. Stop without mutating the registry or any transcript.
 
 ## Notes
 
-- **Parameters:** none.
-- **Output shape:** Use `*` for the active collab and `-` for every other collab. Include `slug`, `status`, `active_phase`, and participant count on each line.
+- **Parameters:** `--status <open|closed|archived>` — optional filter; when absent, all collabs are listed.
+- **Output shape:** Each entry spans two lines. Line 1: `[*]` (active) or `[ ]` (inactive), then `#N` (stable 1-based registry position), `-`, slug, title truncated to 20 characters followed by `…` if longer. Line 2: indented status, active phase (`—` when no phase applies), participant count, and `YYYY-MM-DD` init date. Example:
+
+```
+[*] #3 - payment-refactor    Refactor payment pipeli…
+         open · Discussion · 3 participants · 2025-04-28
+
+[ ] #1 - onboarding-flow     User onboarding flow r…
+         closed · — · 4 participants · 2025-03-10
+```
+
+- **Numeric selector stability:** The `#N` position is the collab's 1-based insertion index in the registry `collabs` array and never changes after `archive`, `delete`, or reordering. Pass `#N` or the bare number to any collab management command as a shorthand for the slug (e.g., `/collab use 3`).
+- **Sort order:** Active collab always first. Among the rest: highest `#N` first (newest to oldest), then slug alphabetically as a tiebreaker when `#N` values are equal (not normally possible but stated for completeness).
 - **Registry boundary:** `/collab list` is read-only. It never creates, edits, archives, or selects a collab.

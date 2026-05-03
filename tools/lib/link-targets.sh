@@ -16,7 +16,9 @@ commands|.cursor/commands|dir|required
 _functions|.cursor/_functions|dir|required
 _mdc|.cursor/_mdc|dir|required
 _core|.cursor/_core|dir|required
+_roles|.cursor/_roles|dir|required
 _tests|.cursor/_tests|dir|required
+_templates|.cursor/_templates|dir|required
 _CURSOR.md|.cursor/_CURSOR.md|file|required
 EOF
 }

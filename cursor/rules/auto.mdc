@@ -5,7 +5,7 @@ alwaysApply: true
 
 # auto router
 
-Contract: [auto-context-gate](../_mdc/auto/auto-context-gate.mdc), [auto-docs-markdown](../_mdc/auto/auto-docs-markdown.mdc), [auto-code-typescript](../_mdc/auto/auto-code-typescript.mdc), [auto-collab-message-format](../_mdc/auto/auto-collab-message-format.mdc), [shared router](shared.mdc)
+Contract: [auto-context-gate](../_mdc/auto/auto-context-gate.mdc), [auto-docs-markdown](../_mdc/auto/auto-docs-markdown.mdc), [auto-code-typescript](../_mdc/auto/auto-code-typescript.mdc), [auto-collab-format](../_mdc/auto/auto-collab-format.mdc), [shared router](shared.mdc)
 
 ## When the rule applies
 
@@ -19,7 +19,7 @@ Apply as the always-on auto rule entrypoint for this Cursor config tree.
   - `auto-code-typescript.mdc`
   - `auto-context-gate.mdc`
   - `auto-docs-markdown.mdc`
-  - `auto-collab-message-format.mdc`
+  - `auto-collab-format.mdc`
 - When a dependency rule is required, load it from `../_mdc/shared/` (via `shared.mdc` routing).
 - When any required dependency is unreadable, follow `../_mdc/auto/auto-context-gate.mdc` hard-stop behavior.
 
@@ -28,5 +28,5 @@ Apply as the always-on auto rule entrypoint for this Cursor config tree.
 - [auto-code-typescript](../_mdc/auto/auto-code-typescript.mdc)
 - [auto-context-gate](../_mdc/auto/auto-context-gate.mdc)
 - [auto-docs-markdown](../_mdc/auto/auto-docs-markdown.mdc)
-- [auto-collab-message-format](../_mdc/auto/auto-collab-message-format.mdc)
+- [auto-collab-format](../_mdc/auto/auto-collab-format.mdc)
 - [shared router](shared.mdc)

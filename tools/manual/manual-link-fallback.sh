@@ -57,6 +57,26 @@ link() {
   echo "Linked $dest -> $src"
 }
 
+copy_cursor_runtime() {
+  local src="$1"
+  local dest="$2"
+  local source_kind="$3"
+  mkdir -p "$(dirname "$dest")"
+  rm -rf "$dest"
+  case "$source_kind" in
+    dir)
+      cp -R "$src" "$dest"
+      ;;
+    file)
+      cp -p "$src" "$dest"
+      ;;
+    *)
+      echo "manual-link-fallback: unknown Cursor runtime source kind: $source_kind" >&2
+      exit 1
+      ;;
+  esac
+}
+
 cursor_strip_nested_mirrors "$CURSOR_CONFIG_ROOT"
 cursor_assert_no_nested_mirrors "$CURSOR_CONFIG_ROOT" "manual-fallback" || exit 1
 
@@ -92,7 +112,7 @@ while IFS='|' read -r source_rel dest_rel source_kind required; do
   if ! link_source_exists "$src" "$source_kind"; then
     continue
   fi
-  link "$src" "$dest"
+  copy_cursor_runtime "$src" "$dest" "$source_kind"
 done < <(cursor_runtime_link_specs)
 
 CURSOR_USER_DIR="$(cursor_user_dir_for_home "$HOME" "$OSTYPE" "${XDG_CONFIG_HOME:-}")"

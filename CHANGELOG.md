@@ -5,6 +5,19 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-05-03] - 2026-05-03
+
+### Added
+
+- Workflow controls define roles, retries, and guarded transitions.
+- A shared role catalog keeps participant settings consistent.
+- Tests cover role templates and workflow boundaries.
+
+### Changed
+
+- Credential helper formatting remains portable across machines.
+- Setup guidance reflects the structured workflow.
+
 ## [2026-04-26] - 2026-04-26
 
 ### Added
@@ -91,7 +104,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.04.26...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.03...HEAD
+[2026-05-03]: https://github.com/ejelome/dotfiles/compare/v2026.04.26...v2026.05.03
 [2026-04-26]: https://github.com/ejelome/dotfiles/compare/v2026.04.11...v2026.04.26
 [2026-04-11]: https://github.com/ejelome/dotfiles/compare/v2026.04.05...v2026.04.11
 [2026-04-05]: https://github.com/ejelome/dotfiles/compare/v2026.03.29...v2026.04.05

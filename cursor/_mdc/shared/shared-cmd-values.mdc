@@ -1,0 +1,52 @@
+---
+description: "[shared] shared-cmd-values.mdc: prohibit hard-coded configuration values in prose paragraphs of command and rule files"
+alwaysApply: false
+---
+
+# Command value prose convention
+
+## When the rule applies
+
+- Apply when authoring or editing prose paragraphs in `.md` and `.mdc` files under `cursor/` — command files, function files, rule files, and template files.
+- Does not apply to JSON files (canonical sources), illustrative examples or embedded invocations in prose, command namespaces (e.g., `/collab`), command tokens (e.g., `speak`, `execute`), flag names (e.g., `--role`, `--reviewer`), placeholders (e.g., `<role>`, `<key>`), tables, summary labels, or metadata sections that mirror registry state.
+
+## Behavior
+
+**Triggers:** `shared-cmd-values`, `command value convention`, `hard-coded values`, `prose value prohibition`
+
+### Prohibited values
+
+Do not reproduce the following as literal text in prose paragraphs of `.md` and `.mdc` files:
+
+- **Role key values** — the literal strings that identify registered roles (e.g., the strings that serve as role identifiers in `cursor/_roles/*.json`). These are configuration-owned; prose must not enumerate them inline.
+- **Agent or model identifier values** — the literal strings naming an agent or model. These are configuration-owned; prose must not enumerate them inline.
+
+### Behavior-binding references
+
+A reference that names a single value to bind behavior — for example, a conditional that tests the executing role to apply a specific rule — is in scope. The canonical source for role keys is `cursor/_roles/*.json`; prose that would otherwise hard-code an identifier should reference the role's defining property or use a neutral description instead.
+
+### In-scope surface
+
+Prose paragraphs only: body text in steps, notes, descriptions, and explanatory paragraphs in `.md` and `.mdc` files.
+
+### Out-of-scope surface
+
+- JSON files under `cursor/_roles/` and elsewhere — these are the canonical sources
+- Illustrative examples and embedded invocations explicitly marked as examples or selective rather than authoritative
+- Command namespaces (e.g., `/collab`, `/agent`)
+- Command tokens (e.g., `speak`, `execute`, `init`)
+- Flag names (e.g., `--role`, `--reviewer`, `--turn-order`)
+- Placeholders (e.g., `<role>`, `<key>`, `<agent>`)
+- Tables, summary labels, and metadata sections whose authority is the rendering context (registry state, scaffold output)
+
+## Examples
+
+Example: instead of "If the speaking participant is `mod`" naming the value directly, reference the role's defining property from `cursor/_roles/` or use a neutral description such as "If the speaking participant is the moderator role."
+
+Example: instead of listing accepted role values as "`mod`, `tw`, `pe`, `pa`" in prose, write "the registered role keys" and point to `cursor/_roles/` for the authoritative roster.
+
+## References
+
+- `cursor/_roles/*.json` — canonical source for role key values and role metadata.
+- [shared-docs-rules](shared-docs-rules.mdc) — `.mdc` file hygiene and naming convention.
+- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style.md), [document-standard](../../_core/document.md).

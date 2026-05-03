@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Symlink dotfiles from this repo into $HOME. Backs up existing files.
+# Install dotfiles from this repo into $HOME. Backs up existing home links.
 set -e
 DOTFILES_ROOT="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=tools/lib/cursor-layout.sh
@@ -67,7 +67,7 @@ set_bool_option() {
   printf -v "$var_name" '%s' "$normalized"
 }
 
-# Cursor config source: directory containing _CURSOR.md, rules/, commands/, _functions/, _mdc/, _core/, _tests/, and _settings/.
+# Cursor config source: directory containing _CURSOR.md, rules/, commands/, _functions/, _mdc/, _core/, _roles/, _tests/, _templates/, and _settings/.
 # Canonical install path is always ~/.cursor/... . Override to point at any checkout (not necessarily this repo).
 # Each ~/.cursor target is linked only when the corresponding source path exists under CURSOR_CONFIG_ROOT.
 # skills-cursor/ is managed by Cursor itself and is not tracked in this repo.
@@ -282,8 +282,28 @@ if [[ -d "$DOTFILES_ROOT/config" ]]; then
   done
 fi
 
+copy_cursor_runtime() {
+  local src="$1" dest="$2" source_kind="$3"
+  mkdir -p "$(dirname "$dest")"
+  rm -rf "$dest"
+  case "$source_kind" in
+    dir)
+      cp -R "$src" "$dest"
+      ;;
+    file)
+      cp -p "$src" "$dest"
+      ;;
+    *)
+      echo "link.sh: unknown Cursor runtime source kind: $source_kind" >&2
+      exit 1
+      ;;
+  esac
+  echo "Copied $dest <- $src"
+}
+
 # Runtime Cursor mirrors and Cursor User settings are both derived from
-# tools/lib/link-targets.sh to avoid per-file path drift.
+# tools/lib/link-targets.sh to avoid per-file path drift. Runtime ~/.cursor
+# targets are copied so ~/.cursor is not a symlinked view of this checkout.
 while IFS='|' read -r source_rel dest_rel source_kind required; do
   [[ -n "$source_rel" ]] || continue
   src="$CURSOR_CONFIG_ROOT/$source_rel"
@@ -291,7 +311,7 @@ while IFS='|' read -r source_rel dest_rel source_kind required; do
   if ! link_source_exists "$src" "$source_kind"; then
     continue
   fi
-  link "$src" "$dest"
+  copy_cursor_runtime "$src" "$dest" "$source_kind"
 done < <(cursor_runtime_link_specs)
 
 CURSOR_USER_DIR="$(cursor_user_dir_for_home "$HOME" "$OSTYPE" "${XDG_CONFIG_HOME:-}")"

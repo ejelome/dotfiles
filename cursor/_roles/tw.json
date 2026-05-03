@@ -1,6 +1,6 @@
 {
-  "acronym": "tw",
-  "display_name": "Technical Writer",
+  "key": "tw",
+  "displayName": "Technical Writer",
   "concerns": [
     "clarity",
     "conciseness",

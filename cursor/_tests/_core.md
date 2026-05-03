@@ -14,10 +14,10 @@ Deterministic QA for `~/.cursor/_core/*.md` canon documents.
 ## Required roster
 
 - `agents.md`
-- `collab-registry.md`
 - `command.md`
 - `context.md`
 - `document.md`
+- `role.md`
 - `style.md`
 - `voice.md`
 
