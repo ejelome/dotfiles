@@ -11,7 +11,7 @@ grep -Fq '**Slash:** `/collab set`' "$file" || fail "set.md: missing slash decla
 grep -Fq '**Signature:** `/collab set <field> <value>`' "$file" || fail "set.md: missing set signature"
 grep -Fq '`title` updates the registry title and transcript H1.' "$file" || fail "set.md: missing title mutation contract"
 grep -Fq '`description` updates the registry description' "$file" || fail "set.md: missing description mutation contract"
-grep -Fq '`turn-order` parses space-separated role acronyms' "$file" || fail "set.md: missing turn-order mutation contract"
+grep -Fq '`turn-order` parses space-separated role keys' "$file" || fail "set.md: missing turn-order mutation contract"
 grep -Fq '`active-phase` is recovery-only: require `--force`' "$file" || fail "set.md: missing force-only active-phase repair"
 grep -Fq '`status` -> `open` / `close`' "$file" || fail "set.md: missing status ownership boundary"
 grep -Fq '`participants` -> `join` / `kick`' "$file" || fail "set.md: missing participant ownership boundary"

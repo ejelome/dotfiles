@@ -1,6 +1,6 @@
 {
-  "acronym": "mod",
-  "display_name": "Moderator",
+  "key": "mod",
+  "displayName": "Moderator",
   "concerns": [
     "scope",
     "sequencing",

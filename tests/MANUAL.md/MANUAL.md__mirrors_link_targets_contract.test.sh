@@ -28,7 +28,7 @@ expected = """---
   - [2. Link required top-level home files](#2-link-required-top-level-home-files)
   - [3. Remove legacy `~/.cursor/core` if present as a symlink](#3-remove-legacy-cursorcore-if-present-as-a-symlink)
   - [4. Mirror `config/` into `~/.config/`](#4-mirror-config-into-config)
-  - [5. Link the Cursor runtime tree](#5-link-the-cursor-runtime-tree)
+  - [5. Copy the Cursor runtime tree](#5-copy-the-cursor-runtime-tree)
   - [6. Link Cursor user settings (platform-specific User folder)](#6-link-cursor-user-settings-platform-specific-user-folder)
   - [7. Optional: install Cursor and expose the `cursor` CLI (macOS-oriented)](#7-optional-install-cursor-and-expose-the-cursor-cli-macos-oriented)
   - [8. Optional: build the workspace launcher app (macOS)](#8-optional-build-the-workspace-launcher-app-macos)

@@ -5,14 +5,15 @@
 #
 # Shellcheck (when installed) runs on bash entrypoints: link.sh, this script,
 # tools/check-agent-adapters.sh, tools/check-cursor-content.sh,
-# tools/cursor/sync-commands-catalog.sh, tools/manual/manual-link-fallback.sh,
+# tools/cursor/sync-commands-catalog.sh, tools/cursor/sync-roles-roster.sh,
+# tools/manual/manual-link-fallback.sh,
 # tools/cursor-cli/clear-chat.sh, tools/cursor-cli/factory-reset.sh.
 # Markdownlint (when installed) uses repo-root .markdownlint.json.
 # Launcher lib/*.sh and zshrc are zsh; they are syntax-checked with zsh -n, not shellcheck.
 #
 # Cursor config tree checks use CURSOR_CONFIG_ROOT (default: $ROOT/cursor in this clone).
 # Ensures commands/commands.md links every public command under commands/*.md
-# and every private route function under _functions/**/*.md. Ensures rules/
+# and every private route function under _functions/**/*.md. Ensures roles and rules/
 # exposes only router files and private rule bodies live under _mdc/{auto,shared}/.
 # Nested-mirror paths are absent. skills-cursor/ is managed by Cursor itself and
 # is not tracked in this repo.
@@ -25,8 +26,8 @@
 # installed rules/commands without depending on this repo's canon.
 #
 # Optional runtime projection validation runs only when SMOKE_CHECK_RUNTIME=1.
-# In runtime mode, required runtime destinations must exist and be symlinks to
-# the expected CURSOR_CONFIG_ROOT sources.
+# In runtime mode, required runtime destinations must exist as copied files or
+# directories matching the expected CURSOR_CONFIG_ROOT sources.
 #
 # Usage: ./tools/smoke-check.sh
 #
@@ -159,8 +160,20 @@ validate_runtime_projection() {
       [[ "$required" == "optional" ]] && continue
       die "runtime projection missing destination: ${actual} (expected -> ${expected})"
     fi
-    [[ -L "$actual" ]] || die "runtime projection expects symlink at ${actual}"
-    [[ "$(readlink "$actual")" == "$expected" ]] || die "runtime projection mismatch at ${actual}: expected ${expected}"
+    [[ ! -L "$actual" ]] || die "runtime projection expects copied path, not symlink: ${actual}"
+    case "$source_kind" in
+      dir)
+        [[ -d "$actual" ]] || die "runtime projection expects directory at ${actual}"
+        diff -qr "$expected" "$actual" >/dev/null || die "runtime projection differs at ${actual}: expected copy of ${expected}"
+        ;;
+      file)
+        [[ -f "$actual" ]] || die "runtime projection expects file at ${actual}"
+        cmp -s "$expected" "$actual" || die "runtime projection differs at ${actual}: expected copy of ${expected}"
+        ;;
+      *)
+        die "unknown runtime source kind: ${source_kind}"
+        ;;
+    esac
   done < <(cursor_runtime_link_specs)
 
   cursor_user_dir="$(cursor_user_dir_for_home "$HOME" "$OSTYPE" "${XDG_CONFIG_HOME:-}")"
@@ -184,6 +197,7 @@ bash -n "${ROOT}/tools/smoke-check.sh"
 bash -n "${ROOT}/tools/check-agent-adapters.sh"
 bash -n "${ROOT}/tools/check-cursor-content.sh"
 bash -n "${ROOT}/tools/cursor/sync-commands-catalog.sh"
+bash -n "${ROOT}/tools/cursor/sync-roles-roster.sh"
 bash -n "${ROOT}/tools/manual/manual-link-fallback.sh"
 bash -n "${ROOT}/tools/cursor-cli/clear-chat.sh"
 bash -n "${ROOT}/tools/cursor-cli/factory-reset.sh"
@@ -202,6 +216,9 @@ zsh -n "${ROOT}/zshrc"
 
 echo "smoke-check: python …"
 python3 -m py_compile "${ROOT}/launcher/lib/dock_update.py"
+python3 -m py_compile "${ROOT}/tools/cursor/roles.py"
+python3 -m py_compile "${ROOT}/tools/collab/registry.py"
+python3 -m py_compile "${ROOT}/tools/revamp/state.py"
 
 echo "smoke-check: gitconfig …"
 git config --file "${ROOT}/gitconfig" --list >/dev/null
@@ -304,6 +321,9 @@ done
 echo "smoke-check: command catalog sync …"
 CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-commands-catalog.sh" --check
 
+echo "smoke-check: role roster sync …"
+CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-roles-roster.sh" --check
+
 echo "smoke-check: adapter sync …"
 "$ROOT/tools/check-agent-adapters.sh"
 
@@ -318,6 +338,7 @@ validate_runtime_projection
 [[ -x "${ROOT}/tools/check-agent-adapters.sh" ]] || die "tools/check-agent-adapters.sh must be executable"
 [[ -x "${ROOT}/tools/check-cursor-content.sh" ]] || die "tools/check-cursor-content.sh must be executable"
 [[ -x "${ROOT}/tools/cursor/sync-commands-catalog.sh" ]] || die "tools/cursor/sync-commands-catalog.sh must be executable"
+[[ -x "${ROOT}/tools/cursor/sync-roles-roster.sh" ]] || die "tools/cursor/sync-roles-roster.sh must be executable"
 [[ -x "${ROOT}/tools/manual/manual-link-fallback.sh" ]] || die "tools/manual/manual-link-fallback.sh must be executable"
 [[ -x "${ROOT}/launcher/setup-cursor-workspace-launcher.sh" ]] || die "launcher setup must be executable"
 
@@ -325,7 +346,8 @@ if command -v shellcheck >/dev/null 2>&1; then
   echo "smoke-check: shellcheck …"
   shellcheck -x "${ROOT}/link.sh" "${ROOT}/tools/smoke-check.sh" \
     "${ROOT}/tools/check-agent-adapters.sh" "${ROOT}/tools/check-cursor-content.sh" \
-    "${ROOT}/tools/cursor/sync-commands-catalog.sh" "${ROOT}/tools/manual/manual-link-fallback.sh" \
+    "${ROOT}/tools/cursor/sync-commands-catalog.sh" "${ROOT}/tools/cursor/sync-roles-roster.sh" \
+    "${ROOT}/tools/manual/manual-link-fallback.sh" \
     "${ROOT}/tools/cursor-cli/clear-chat.sh" "${ROOT}/tools/cursor-cli/factory-reset.sh"
 else
   echo "smoke-check: [warn] shellcheck not in PATH; skipping." >&2

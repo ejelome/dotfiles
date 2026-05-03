@@ -1,0 +1,10 @@
+{
+  "key": "pe",
+  "displayName": "Platform Engineer",
+  "concerns": [
+    "effectiveness",
+    "efficiency",
+    "completeness",
+    "optimization"
+  ]
+}

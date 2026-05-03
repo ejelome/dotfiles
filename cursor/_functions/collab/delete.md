@@ -1,24 +1,26 @@
 # /collab delete
 
-Archive or permanently remove a collab so terminal-only users can clean up registry noise without editing files directly.
+Permanently remove a collab record from the registry and disk. This operation is destructive and requires explicit confirmation.
 
 ## Trigger
 
 **Slash:** `/collab delete`
-**Signature:** `/collab delete`
-**Phrases:** collab delete, archive collab, remove collaboration record
+**Signature:** `/collab delete [<target>]`
+**Phrases:** collab delete, hard delete collab, permanently remove collaboration record
 
 ## Steps
 
 1. Resolve the target collab with **Registry targeting** in **Notes**.
 2. Read `.collabs/registry.json` and the resolved transcript path. If either is unreadable, **ABORT**: record unreadable; name the path.
-3. If `--hard` is present in the remaining input: require explicit hard-removal intent, remove the collab entry from the registry, clear `active_collab_id` when it points at that collab, and delete the transcript file.
-4. Otherwise mark the collab as archived in the registry, set registry status to `archived`, and clear `active_collab_id` when it points at that collab.
-5. Stop after registry cleanup and any hard-delete transcript removal. Do not edit prior transcripts during soft delete.
+3. Require explicit confirmation before proceeding: display the collab slug, id, and transcript path, then prompt the moderator to confirm with `yes` or abort with anything else. If the moderator does not confirm, stop without any change.
+4. Remove the collab entry from the registry entirely.
+5. Clear `activeCollabId` when it points at the deleted collab.
+6. Delete the transcript file from disk.
+7. Stop after registry removal and transcript deletion.
 
 ## Notes
 
-- **Parameters:** target collab slug, id, or legacy transcript path as the first token after `delete`; when absent, resolved per **Registry targeting** in **Notes**. `--hard` — optional destructive flag that removes the transcript file in addition to the registry entry.
-- **Registry targeting:** Resolve the target collab from `.collabs/registry.json`, using `tools/collab/registry.py` as the shared helper. When the first token after the route is present, treat it as a collab slug or id; if that token starts with `.` or `/` and ends with `.md`, match it against `transcript_path` as a legacy explicit target. Otherwise use `active_collab_id`. If the registry is unreadable or invalid, the token does not match any entry, or `active_collab_id` is empty, **ABORT**: registry target unavailable; name the registry field or token.
-- **Soft delete default:** Default delete is archival only. Keep the transcript on disk for auditability and recovery.
-- **Hard delete boundary:** Hard delete is destructive. Require the explicit `--hard` flag before removing any transcript file.
+- **Parameters:** target collab slug, id, or numeric `#N` as the first token after `delete`; when absent, resolved per **Registry targeting** in **Notes**.
+- **Registry targeting:** Resolve the target collab from `.collabs/registry.json`, using `tools/collab/registry.py` as the shared helper. When the first token after the route is present, treat it as a collab slug, id, or stable numeric position. Otherwise use `activeCollabId`. If the registry is unreadable or invalid, the token does not match any entry, or `activeCollabId` is empty, **ABORT**: registry target unavailable; name the registry field or token.
+- **Destructive by default:** `delete` is always a hard delete — it removes both the registry entry and the transcript file. For non-destructive deactivation, use `/collab archive` instead.
+- **Confirmation required:** Always show the target details and require an explicit `yes` before writing. Never skip the confirmation prompt.

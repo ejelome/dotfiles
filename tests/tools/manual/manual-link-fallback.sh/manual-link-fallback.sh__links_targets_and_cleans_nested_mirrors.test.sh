@@ -32,7 +32,7 @@ done < <(dotfiles_home_link_specs)
 
 while IFS='|' read -r source_rel dest_rel source_kind required; do
   [[ -n "$source_rel" ]] || continue
-  assert_symlink_points_to "$home/$dest_rel" "$cfg/$source_rel"
+  assert_copy_matches "$home/$dest_rel" "$cfg/$source_rel"
 done < <(cursor_runtime_link_specs)
 
 cursor_user_dir="$(cursor_user_dir_for_home "$home" "$OSTYPE" "${XDG_CONFIG_HOME:-}")"

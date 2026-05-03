@@ -14,7 +14,7 @@ cleanup() {
 trap cleanup EXIT
 
 cfg="$tmp/cursor"
-mkdir -p "$cfg/commands" "$cfg/rules" "$cfg/_functions" "$cfg/_core" "$cfg/_mdc" "$cfg/_tests"
+mkdir -p "$cfg/commands" "$cfg/rules" "$cfg/_functions" "$cfg/_core" "$cfg/_mdc" "$cfg/_roles" "$cfg/_tests"
 ln -s "$cfg/commands" "$cfg/commands/commands"
 
 set +e

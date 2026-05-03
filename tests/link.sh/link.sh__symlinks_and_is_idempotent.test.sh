@@ -37,7 +37,7 @@ done < <(dotfiles_home_link_specs)
 
 while IFS='|' read -r source_rel dest_rel source_kind required; do
   [[ -n "$source_rel" ]] || continue
-  assert_symlink_points_to "$home/$dest_rel" "$ROOT/cursor/$source_rel"
+  assert_copy_matches "$home/$dest_rel" "$ROOT/cursor/$source_rel"
 done < <(cursor_runtime_link_specs)
 
 assert_not_exists "$home/.cursor/core"
@@ -51,6 +51,8 @@ while IFS='|' read -r source_rel dest_name source_kind required; do
 done < <(cursor_user_settings_link_specs)
 
 note "second run (idempotency)"
+printf 'stale runtime file\n' >"$home/.cursor/rules/stale.mdc"
+printf 'changed runtime guide\n' >"$home/.cursor/_CURSOR.md"
 run_link
 
 while IFS='|' read -r source_rel dest_rel source_kind required; do
@@ -60,5 +62,7 @@ done < <(dotfiles_home_link_specs)
 
 assert_not_exists "$home/.zshrc.bak"
 assert_not_exists "$home/.gitconfig.bak"
+assert_not_exists "$home/.cursor/rules/stale.mdc"
+assert_copy_matches "$home/.cursor/_CURSOR.md" "$ROOT/cursor/_CURSOR.md"
 
-echo "PASS: link symlinks and idempotency"
+echo "PASS: link home symlinks, runtime copies, and idempotency"

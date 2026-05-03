@@ -19,7 +19,9 @@ Harness files under `~/.cursor/_tests/`:
 - `_functions.md`
 - `_mdc.md`
 - `_core.md`
+- `_roles.md`
 - `_settings.md`
+- `_templates.md`
 - `_tests.md`
 
 ## Output

@@ -10,6 +10,8 @@ _functions/_functions
 _core/_core
 _mdc/_mdc
 _tests/_tests
+_roles/_roles
+_templates/_templates
 EOF
 }
 

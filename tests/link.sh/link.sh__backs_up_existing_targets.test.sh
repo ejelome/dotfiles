@@ -27,11 +27,12 @@ INSTALL_ZSH_PLUGINS=0 \
 
 assert_exists "$home/.zshrc.bak"
 assert_exists "$home/.gitconfig.bak"
-assert_exists "$home/.cursor/rules.bak/local.txt"
+assert_not_exists "$home/.cursor/rules.bak"
 
 assert_symlink_points_to "$home/.zshrc" "$ROOT/zshrc"
 assert_symlink_points_to "$home/.gitconfig" "$ROOT/gitconfig"
-assert_symlink_points_to "$home/.cursor/rules" "$ROOT/cursor/rules"
+assert_copy_matches "$home/.cursor/rules" "$ROOT/cursor/rules"
+assert_not_exists "$home/.cursor/rules/local.txt"
 
 zshrc_bak="$(cat "$home/.zshrc.bak")"
 gitconfig_bak="$(cat "$home/.gitconfig.bak")"

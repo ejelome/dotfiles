@@ -1,19 +1,21 @@
 ---
-description: "[auto] auto-collab-message-format.mdc: format captured collab prose after append"
-alwaysApply: true
+description: "[auto] auto-collab-format.mdc: format captured collab prose after append"
+alwaysApply: false
+globs:
+  - ".collabs/records/**/*.md"
 ---
 
 # Collab message formatting
 
-**Triggers:** `auto-collab-message-format`, `collab speak`, `.collabs/records/`, collaboration record, post-send formatting, captured prose
-
 ## When the rule applies
 
-- Apply only when user-authored prose is appended to `.collabs/records/*.md`.
+- Apply only when user-authored prose is appended to `.collabs/records/**/*.md`.
 - Apply after `/collab speak` captures moderator (or other human-supplied) text.
 - Apply when the user asks to record a statement in a collaboration file.
 
 ## Behavior
+
+**Triggers:** `auto-collab-format`, `auto-collab-message-format`, `collab speak`, `.collabs/records/`, collaboration record, post-send formatting, captured prose
 
 1. Run the formatting pass in the same turn after the contribution is appended.
 2. **Default (required):** preserve the **exact substance** of what was captured. A formatting pass is **not** permission to rephrase, polish, "improve," answer a question, or replace the author’s text with a summary or consensus. Doing that is a failed application of this rule, not a helpful default.

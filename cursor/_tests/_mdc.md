@@ -17,13 +17,14 @@ Deterministic QA for private rule bodies in `~/.cursor/_mdc/**/*.mdc`.
 Private auto rules under `~/.cursor/_mdc/auto/`:
 
 - `auto-code-typescript.mdc`
-- `auto-collab-message-format.mdc`
+- `auto-collab-format.mdc`
 - `auto-context-gate.mdc`
 - `auto-docs-markdown.mdc`
 
 Private shared rules under `~/.cursor/_mdc/shared/`:
 
 - `shared-cmd-eval.mdc`
+- `shared-cmd-values.mdc`
 - `shared-docs-precedence.mdc`
 - `shared-docs-rules.mdc`
 - `shared-docs-toc.mdc`
