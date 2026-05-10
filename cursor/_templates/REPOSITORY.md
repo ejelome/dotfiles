@@ -46,7 +46,7 @@ Authority is strict and ordered:
 
 <!-- TODO(agent): describe any project-local or environment-specific validation gates -->
 
-## 6) Compatibility
+## 6) Contract Versioning
 
 Contract version: `0.1.0`.
 

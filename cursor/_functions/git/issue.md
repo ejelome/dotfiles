@@ -6,15 +6,15 @@ Prefill a tracked issue workflow (**`create`**) or run implementation work (**`i
 
 **Slash:** `/git issue`
 **Signature:** `/git issue <create | implement> <goal>`
-**Phrases (create):** `create issue`, `new issue`
-**Phrases (implement):** `implement issue`
+**Prose dispatch:** `(git issue <create | implement> <goal>)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** `create issue`, `new issue`, `implement issue`
 
 ## Steps
 
 1. Resolve `<create | implement>` from the first keyword. If missing, **ABORT**: `<create | implement>` is required.
 2. Resolve `<goal>` from remaining tokens after the mode keyword. If missing, **ABORT**: `<goal>` is required.
 3. Load [shared-git-commits.mdc](../../_mdc/shared/shared-git-commits.mdc) before generating branch names, commit subjects, PR fields, or grounded plans. If not readable, **ABORT** per **`auto-context-gate.mdc`**.
-4. Load [shared-docs-precedence.mdc](../../_mdc/shared/shared-docs-precedence.mdc) when `<goal>` names devblog paths (`**/devblog/**/*.md`) or lean contracts under `docs/playbook/`. If required and not readable, **ABORT**.
+4. Load [shared-docs-precedence.mdc](../../_mdc/shared/shared-docs-precedence.mdc) when `<goal>` names devblog paths (`**/devblog/**/*.md`) or lean contracts under `doc/playbook/`. If required and not readable, **ABORT**.
 5. For **create**, output **all four** phases in **Notes** (Phases 1–4) with `<goal>` populating issue title, branch name, and PR title. Use **`#<n>`** only for the GitHub issue number of the issue being prefilled (same `<n>` in branch, `Resolves #<n>`, and related fields). Do not run code or edit files.
 6. For **implement**, scan the repo per [shared-git-commits.mdc](../../_mdc/shared/shared-git-commits.mdc) **Repo grounding** before changing files. Derive `type`, `scope`, and `title kebab-case` from `<goal>`; read `stack` from manifests; populate `requirements` and `constraints` only from what is explicitly stated in `<goal>` or directly readable in the repo — do not infer. Fill **Structured input** in **Notes**, then plan, edit files, and list atomic commit subjects. Run `git` commands only when explicitly requested.
 
@@ -131,3 +131,9 @@ No scope beyond acceptance criteria · no new deps without flagging · typing ({
 
 - Default placeholders: `{{persona-role}}` from repo documentation (for example `AGENTS.md`) when directly readable; `{{stack}}` from manifests and sources. Do not default `{{seniority}}` — omit the token if the user did not supply it. Leave any placeholder not directly readable as a literal; do not guess.
 - **Git discipline:** One commit per acceptance criterion or small logical unit; keep the branch buildable.
+
+```cursor-arg
+dispatch: (git issue <create | implement> <goal>)
+param: name=<create | implement>; required=required; placeholder=<create | implement>; class=literal; values=create | implement
+param: name=<goal>; required=required; placeholder=<goal>; class=type; rule=free text issue goal
+```

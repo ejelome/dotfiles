@@ -12,5 +12,7 @@
   "claudeCode.preferredLocation": "sidebar",
   "git.openRepositoryInParentFolders": "always",
   "explorer.confirmDragAndDrop": false,
-  "explorer.confirmPasteNative": false
+  "explorer.confirmPasteNative": false,
+  "terminal.integrated.tabs.title": "${process}",
+  "terminal.integrated.tabs.description": ""
 }

@@ -6,7 +6,8 @@ Route multi-agent scaffold workflows through one public slash command.
 
 **Slash:** `/agent`
 **Signature:** `/agent <install | patch | upgrade>`
-**Phrases:** agent install, agent patch, agent upgrade, bootstrap multi-agent setup, install multi-agent scaffold, patch repository for multi-agent, upgrade multi-agent scaffold
+**Prose dispatch:** `(agent install ...)`, `(agent patch ...)`, `(agent upgrade ...)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** agent install, agent patch, agent upgrade, bootstrap multi-agent setup, install multi-agent scaffold, patch repository for multi-agent, upgrade multi-agent scaffold
 
 ## Steps
 

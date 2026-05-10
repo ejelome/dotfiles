@@ -142,7 +142,7 @@ Follow the repository’s existing layout and colocation conventions.
 
 - Never mutate the DOM inside React render paths except through refs.
 - Keep hook dependency arrays accurate; set **`react-hooks/exhaustive-deps`** to **warn** in ESLint.
-- Treat missing hook dependencies as a **major** issue in review or eval criteria regardless of ESLint severity.
+- Treat missing hook dependencies as a **major** issue in review regardless of ESLint severity.
 
 ### React hooks (ESLint)
 
@@ -166,7 +166,7 @@ Example: public function — explicit parameter and return types at the boundary
 ## References
 
 - Discover ESLint and Prettier config from each repository root; do not assume a single fixed checkout layout—read the workspace you are in.
-- [style-guide](../../_core/style.md) — imperative instruction shape and LLM-consumed `.mdc` constraints when editing this file.
-- [context-engineering](../../_core/context.md) — context budget; examples there illustrate rule-writing density, not a universal JSDoc requirement on every export.
-- [document-standard](../../_core/document.md) — rule template and front matter.
-- [author-voice](../../_core/voice.md) — personal-account prose; not a substitute for TypeScript rules, but part of the same `~/.cursor/_core/` canon when docs and code overlap.
+- [style-guide](../../_core/style-guide.md) — imperative instruction shape and LLM-consumed `.mdc` constraints when editing this file.
+- [context-engineering](../../_core/context-management.md) — context budget; examples there illustrate rule-writing density, not a universal JSDoc requirement on every export.
+- [document-standard](../../_core/document-standard.md) — rule template and front matter.
+- [author-voice](../../_core/author-voice.md) — personal-account prose; not a substitute for TypeScript rules, but part of the same `~/.cursor/_core/` canon when docs and code overlap.

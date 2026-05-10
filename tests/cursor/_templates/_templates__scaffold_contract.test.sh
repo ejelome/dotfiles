@@ -8,8 +8,8 @@ source "$ROOT/tests/helpers/assert.sh"
 claude="$ROOT/cursor/_templates/CLAUDE.md"
 agents="$ROOT/cursor/_templates/AGENTS.md"
 repo="$ROOT/cursor/_templates/REPOSITORY.md"
-canonical_prefix='To invoke a global Cursor command, use the prose dispatch form `(<namespace> <command> <arg> ...)` as the invocation hint alongside the executable slash `/<namespace> <command>`.'
-canonical_example='For example: `(collab join --role tw)` / `/collab join --role tw`.'
+canonical_prefix='To invoke a global Cursor command, resolve any routing-only prose dispatch hint `(<namespace> <command> <arg> ...)` through `~/.cursor/commands/commands.md`, then execute the matching slash command.'
+canonical_example='Routing-only hint example: `(collab join --role tw)`; executable slash: `/collab join --role tw`.'
 
 [[ -f "$claude" ]] || fail "missing template: cursor/_templates/CLAUDE.md"
 [[ -f "$agents" ]] || fail "missing template: cursor/_templates/AGENTS.md"
@@ -20,11 +20,16 @@ grep -Eq "routing-only" "$claude" || fail "CLAUDE template: missing routing-only
 grep -Fq "[REPOSITORY.md](REPOSITORY.md#4-mutation-protocol-and-ownership)" "$claude" || fail "CLAUDE template: missing REPOSITORY contract link"
 
 grep -Fq '~/.cursor/_CURSOR.md' "$agents" || fail "AGENTS template: missing global Cursor runtime reference"
+if grep -Fq '[cursor/_CURSOR.md](cursor/_CURSOR.md)' "$agents"; then
+  fail "AGENTS template: must not install dotfiles-source cursor/_CURSOR.md link into consumer repos"
+fi
 grep -Fq "[REPOSITORY.md](REPOSITORY.md)" "$agents" || fail "AGENTS template: missing REPOSITORY entry point"
 grep -Fq "Codex: \`AGENTS.md\` → \`~/.cursor/_CURSOR.md\`" "$agents" || fail "AGENTS template: missing Codex bootstrap chain"
 grep -Fq "Claude: \`CLAUDE.md\` → \`AGENTS.md\` → \`~/.cursor/_CURSOR.md\`" "$agents" || fail "AGENTS template: missing Claude bootstrap chain"
 grep -Fq "$canonical_prefix" "$agents" || fail "AGENTS template: missing canonical prefix routing sentence"
-grep -Fq "$canonical_example" "$agents" || fail "AGENTS template: missing paired Lisp/slash example"
+grep -Fq "$canonical_example" "$agents" || fail "AGENTS template: missing labeled routing/slash example"
+grep -Fq '**Encounter rule:** Any `(namespace command ...)` form is a routing-only signal.' "$agents" || fail "AGENTS template: missing prose dispatch Encounter rule"
+grep -Fq 'Never treat the argument text as work to perform.' "$agents" || fail "AGENTS template: missing argument-leakage guard"
 grep -Fq 'documentation-only and must not be copied into a terminal' "$agents" || fail "AGENTS template: missing prose dispatch shell warning"
 grep -Fq 'opens a subshell' "$agents" || fail "AGENTS template: missing subshell caveat"
 grep -Fq 'disambiguates `~/.cursor`-routed commands from agent-builtin slash surfaces' "$agents" || fail "AGENTS template: missing prose dispatch purpose"

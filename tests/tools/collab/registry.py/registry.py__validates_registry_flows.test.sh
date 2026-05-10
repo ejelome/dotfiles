@@ -8,6 +8,13 @@ source "$ROOT/tests/helpers/assert.sh"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
+registry_revision() {
+  local work="$1"
+  local target="$2"
+  local role="$3"
+  (cd "$work" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state "$target" "$role" --resume | python3 -c 'import json,sys; print(json.load(sys.stdin)["registryRevision"])')
+}
+
 registry="$tmpdir/registry.json"
 cat >"$registry" <<'JSON'
 {
@@ -23,9 +30,9 @@ cat >"$registry" <<'JSON'
       "activePhase": "Discussion",
       "moderatorRole": "mod",
       "participants": [
-        {"role": "tw", "agentId": ""},
-        {"role": "pe", "agentId": ""},
-        {"role": "mod", "agentId": ""}
+        {"role": "tw", "agentId": "claude-sonnet-4-6"},
+        {"role": "pe", "agentId": "gpt-5"},
+        {"role": "mod", "agentId": "cursor-composer"}
       ],
       "turnOrder": ["tw", "pe"],
       "transcriptPath": ".collabs/records/2026-04-27-alpha.md",
@@ -47,8 +54,84 @@ pa_role_row="$(python3 "$ROOT/tools/collab/registry.py" role-row pa --roles-dir 
 roles_list="$(python3 "$ROOT/tools/collab/registry.py" roles --roles-dir "$ROOT/cursor/_roles")"
 grep -Fq '| 3 | pe | Platform Engineer |  | effectiveness; efficiency; completeness; optimization |' <<<"$roles_list" || fail "registry helper: roles catalog must list pe"
 grep -Fq '| 4 | tw | Technical Writer |  | clarity; conciseness; accuracy; developer experience |' <<<"$roles_list" || fail "registry helper: roles catalog must list tw"
+python3 "$ROOT/tools/collab/registry.py" --registry "$registry" effort-state alpha pe --effort-defaults "$ROOT/cursor/_core/agent-effort.json" >"$tmpdir/effort-state.json"
+[[ -f "$ROOT/cursor/_core/agent-effort.json" ]] || fail "registry helper: effort source must use cursor/_core/agent-effort.json"
+[[ ! -e "$ROOT/cursor/_core/effort-defaults.json" ]] || fail "registry helper: effort-defaults.json must not remain as a parallel source"
+python3 - "$tmpdir/effort-state.json" "$ROOT/cursor/_core/agent-effort.json" <<'PY' || fail "registry helper: effort-state must report advisory role effort from matrix"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state == {
+    "advisory": True,
+    "effort": "high",
+    "phase": "Discussion",
+    "role": "pe",
+    "source": sys.argv[2],
+    "target": "2026-04-27-alpha",
+}
+PY
 [[ "$(python3 "$ROOT/tools/collab/registry.py" summary-role '<summary>pe</summary>')" == "pe" ]] || fail "registry helper: summary parser must accept key-only summary"
-[[ "$(python3 "$ROOT/tools/collab/registry.py" summary-role '<summary>pe — Platform Engineer</summary>')" == "pe" ]] || fail "registry helper: summary parser must accept legacy summary"
+[[ "$(python3 "$ROOT/tools/collab/registry.py" summary-role '<summary>pe — Platform Engineer</summary>')" == "pe" ]] || fail "registry helper: summary parser must accept display-name summary"
+
+init_reject_root="$tmpdir/init-reject"
+mkdir -p "$init_reject_root"
+init_unknown="$({ cd "$init_reject_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json init --agent-id cursor-composer --force "Alpha Beta"; } 2>&1 || true)"
+[[ "$init_unknown" == "unknown flag: --force" ]] || fail "registry helper: init must reject unknown flags with the canonical message"
+[[ ! -e "$init_reject_root/.collabs/registry.json" ]] || fail "registry helper: init unknown-flag rejection must not create registry"
+[[ ! -d "$init_reject_root/.collabs/records" ]] || fail "registry helper: init unknown-flag rejection must not create records directory"
+
+init_missing_agent="$({ cd "$init_reject_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json init "Alpha Beta"; } 2>&1 || true)"
+[[ "$init_missing_agent" == "agent-id is required" ]] || fail "registry helper: init must require agent-id before writing"
+[[ ! -e "$init_reject_root/.collabs/registry.json" ]] || fail "registry helper: init missing-agent rejection must not create registry"
+
+init_empty_slug="$({ cd "$init_reject_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json init --agent-id cursor-composer "!!!"; } 2>&1 || true)"
+[[ "$init_empty_slug" == "slug is empty; ask the moderator for a clearer name" ]] || fail "registry helper: init must reject empty slugs"
+[[ ! -e "$init_reject_root/.collabs/registry.json" ]] || fail "registry helper: init empty-slug rejection must not create registry"
+
+init_root="$tmpdir/init-live"
+mkdir -p "$init_root"
+today="$(date +%F)"
+expected_alpha=".collabs/records/${today}-alpha-beta.md"
+(cd "$init_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json init --agent-id cursor-composer --reviewer pa "Alpha Beta!" >init-alpha.out)
+[[ "$(cat "$init_root/init-alpha.out")" == "$expected_alpha" ]] || fail "registry helper: init must print resolved transcript path first"
+python3 "$ROOT/tools/collab/registry.py" --registry "$init_root/.collabs/registry.json" validate >/dev/null
+python3 - "$init_root/.collabs/registry.json" "$today" <<'PY' || fail "registry helper: init must persist registry metadata from derivation spec"
+import json
+import sys
+path, today = sys.argv[1:]
+data = json.load(open(path))
+entry = data["collabs"][0]
+assert data["activeCollabId"] == f"{today}-alpha-beta"
+assert entry["id"] == f"{today}-alpha-beta"
+assert entry["slug"] == "alpha-beta"
+assert entry["sequence"] == 1
+assert entry["title"] == "Alpha Beta!"
+assert entry["description"] == "Moderated discussion of Alpha Beta!."
+assert entry["participants"] == [{"role": "mod", "agentId": "cursor-composer"}]
+assert entry["turnOrder"] == ["mod"]
+assert entry["reviewerRole"] == "pa"
+assert entry["reviewerMode"] == "last-in-convergent-phases"
+assert entry["reviewerOptionalPhases"] == ["Discussion"]
+assert entry["transcriptPath"] == f".collabs/records/{today}-alpha-beta.md"
+PY
+grep -Fq '# Alpha Beta!' "$init_root/$expected_alpha" || fail "registry helper: init transcript must preserve title"
+grep -Fq '| open | Audit | mod | pa |' "$init_root/$expected_alpha" || fail "registry helper: init transcript must render reviewer status"
+grep -Fq '| 1 | mod | Moderator | cursor-composer | scope; sequencing; framing; pacing; integrity |' "$init_root/$expected_alpha" || fail "registry helper: init transcript must render moderator agentId"
+grep -Fq '| pa (Principal Architect) | (pending) |' "$init_root/$expected_alpha" || fail "registry helper: init transcript must render pending reviewer"
+
+before_duplicate="$(cat "$init_root/.collabs/registry.json")"
+! (cd "$init_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json init --agent-id cursor-composer "Alpha Beta!" >/dev/null 2>&1) || fail "registry helper: init must reject duplicate slug"
+[[ "$(cat "$init_root/.collabs/registry.json")" == "$before_duplicate" ]] || fail "registry helper: init duplicate rejection must leave registry unchanged"
+(cd "$init_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json init --agent-id cursor-composer "Gamma" >/dev/null)
+python3 - "$init_root/.collabs/registry.json" "$today" <<'PY' || fail "registry helper: init must derive next unused sequence"
+import json
+import sys
+path, today = sys.argv[1:]
+data = json.load(open(path))
+assert data["activeCollabId"] == f"{today}-gamma"
+assert [entry["sequence"] for entry in data["collabs"]] == [1, 2]
+assert data["collabs"][1]["slug"] == "gamma"
+PY
 
 shorthand_registry="$tmpdir/shorthand.json"
 cp "$registry" "$shorthand_registry"
@@ -76,7 +159,7 @@ status_list="$(python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_r
 grep -Fq '[*] #2 - beta    beta' <<<"$status_list" || fail "registry helper: status filter must include matching collabs"
 ! python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_registry" list --status missing >/dev/null 2>&1 || fail "registry helper: invalid status filter must fail"
 python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_registry" set 2 title "beta updated" >/dev/null
-python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_registry" use 1 >/dev/null
+python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_registry" activate 1 >/dev/null
 python3 - "$shorthand_registry" <<'PY' || fail "registry helper: numeric shorthand must resolve registry array positions"
 import json
 import sys
@@ -84,14 +167,12 @@ data = json.load(open(sys.argv[1]))
 assert data["activeCollabId"] == "2026-04-27-alpha"
 assert data["collabs"][1]["title"] == "beta updated"
 PY
-! python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_registry" use 3 >/dev/null 2>&1 || fail "registry helper: numeric shorthand outside registry array must fail"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$shorthand_registry" activate 3 >/dev/null 2>&1 || fail "registry helper: numeric shorthand outside registry array must fail"
 
 python3 "$ROOT/tools/collab/registry.py" --registry "$registry" set alpha title "alpha updated" >/dev/null
 python3 "$ROOT/tools/collab/registry.py" --registry "$registry" set alpha turn-order "pe tw" >/dev/null
 python3 "$ROOT/tools/collab/registry.py" --registry "$registry" advance alpha prev >/dev/null
-python3 "$ROOT/tools/collab/registry.py" --registry "$registry" use alpha >/dev/null
-python3 "$ROOT/tools/collab/registry.py" --registry "$registry" participant alpha ux >/dev/null 2>"$tmpdir/participant-warning.txt"
-grep -Fq 'warning: participant is deprecated; use join-participants so transcript metadata is rendered' "$tmpdir/participant-warning.txt" || fail "registry helper: participant subcommand must warn about deprecation"
+python3 "$ROOT/tools/collab/registry.py" --registry "$registry" activate alpha >/dev/null
 python3 "$ROOT/tools/collab/registry.py" --registry "$registry" set alpha turn-order "mod tw pe" >/dev/null
 python3 "$ROOT/tools/collab/registry.py" --registry "$registry" set alpha active-phase Discussion --force >/dev/null
 python3 "$ROOT/tools/collab/registry.py" --registry "$registry" speak-lifecycle alpha mod tw pe >/dev/null
@@ -103,7 +184,7 @@ data = json.load(open(sys.argv[1]))
 entry = data["collabs"][0]
 assert data["activeCollabId"] == "2026-04-27-alpha"
 assert entry["title"] == "alpha updated"
-assert [p["role"] for p in entry["participants"]] == ["tw", "pe", "mod", "ux"]
+assert [p["role"] for p in entry["participants"]] == ["tw", "pe", "mod"]
 assert entry["turnOrder"] == ["mod", "tw", "pe"]
 assert entry["activePhase"] == "Discussion"
 PY
@@ -220,10 +301,10 @@ cat >"$reviewer_registry" <<'JSON'
       "activePhase": "Audit",
       "moderatorRole": "mod",
       "participants": [
-        {"role": "mod", "agentId": ""},
-        {"role": "tw", "agentId": ""},
-        {"role": "pe", "agentId": ""},
-        {"role": "pa", "agentId": ""}
+        {"role": "mod", "agentId": "cursor-composer"},
+        {"role": "tw", "agentId": "claude-sonnet-4-6"},
+        {"role": "pe", "agentId": "gpt-5"},
+        {"role": "pa", "agentId": "claude-opus-4-7"}
       ],
       "turnOrder": ["mod", "tw", "pe"],
       "reviewerRole": "pa",
@@ -306,8 +387,8 @@ cat >"$deferred_reviewer_registry" <<'JSON'
       "activePhase": "Audit",
       "moderatorRole": "mod",
       "participants": [
-        {"role": "mod", "agentId": ""},
-        {"role": "tw", "agentId": ""}
+        {"role": "mod", "agentId": "cursor-composer"},
+        {"role": "tw", "agentId": "claude-sonnet-4-6"}
       ],
       "turnOrder": ["mod", "tw"],
       "reviewerRole": "pa",
@@ -339,8 +420,26 @@ cat >"$pending_reviewer_live/.collabs/records/2026-04-27-alpha.md" <<'MD'
 MD
 pending_reviewer_reject="$({ cd "$pending_reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha mod; } 2>&1 || true)"
 [[ "$pending_reviewer_reject" == "pending reviewerRole: pa" ]] || fail "registry helper: speak-state must abort while reviewerRole is pending"
+(cd "$pending_reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha mod --resume >pending-resume.json)
+python3 - "$pending_reviewer_live/pending-resume.json" <<'PY' || fail "registry helper: resume signal must expose pending reviewer as non-ready state"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["activePhase"] == "Audit"
+assert state["reviewerState"] == {"reviewerRole": "pa", "state": "pending"}
+assert state["allowedRoles"] == []
+assert state["expectedRole"] is None
+assert state["readyToWrite"] is False
+PY
 [[ "$(python3 "$ROOT/tools/collab/registry.py" --registry "$deferred_reviewer_registry" speak-lifecycle alpha mod tw)" == "Discussion" ]] || fail "registry helper: deferred reviewer must not block lifecycle before joining"
-python3 "$ROOT/tools/collab/registry.py" --registry "$deferred_reviewer_registry" participant alpha pa >/dev/null 2>/dev/null
+python3 - "$deferred_reviewer_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+data["collabs"][0]["participants"].append({"role": "pa", "agentId": "claude-opus-4-7"})
+json.dump(data, open(path, "w"))
+PY
 python3 "$ROOT/tools/collab/registry.py" --registry "$deferred_reviewer_registry" reviewer-state alpha >"$tmpdir/active-reviewer-state.json"
 python3 - "$tmpdir/active-reviewer-state.json" <<'PY' || fail "registry helper: active reviewer state must be registry-owned"
 import json
@@ -440,7 +539,14 @@ PY
 
 execution_registry="$tmpdir/execution.json"
 cp "$registry" "$execution_registry"
-python3 "$ROOT/tools/collab/registry.py" --registry "$execution_registry" execution alpha tw completed 2026-04-28 --assigned-role tw --assigned-role pe --auto-close >/dev/null
+python3 "$ROOT/tools/collab/registry.py" --registry "$execution_registry" execution alpha tw completed 2026-04-28 --assigned-role tw --assigned-role pe --auto-close >"$tmpdir/execution-tw.out"
+python3 - "$tmpdir/execution-tw.out" <<'PY' || fail "registry helper: incomplete execution must emit Completion effort and next executor"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "NEXT: Run /collab run plan for role pe."
+assert lines[1] == "EFFORT: high for tw in Completion — next-turn recommendation; Implementation-bearing or convergence-critical; sustained reasoning required."
+assert lines[2] == "open"
+PY
 python3 - "$execution_registry" <<'PY' || fail "registry helper: incomplete assigned execution must leave record open"
 import json
 import sys
@@ -450,7 +556,16 @@ assert data["activeCollabId"] == "2026-04-27-alpha"
 assert entry["status"] == "open"
 assert entry["execution"]["tw"]["status"] == "completed"
 PY
-python3 "$ROOT/tools/collab/registry.py" --registry "$execution_registry" execution alpha pe completed 2026-04-28 --assigned-role tw --assigned-role pe --auto-close >/dev/null
+python3 "$ROOT/tools/collab/registry.py" --registry "$execution_registry" execution alpha pe completed 2026-04-28 --assigned-role tw --assigned-role pe --auto-close >"$tmpdir/execution-pe.out"
+python3 - "$tmpdir/execution-pe.out" <<'PY' || fail "registry helper: completed execution must emit Completion effort and clear efficiency"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "NEXT: Collab closed; run /clear before starting another collab."
+assert lines[1] == "EFFORT: high for pe in Completion — next-turn recommendation; Implementation-bearing or convergence-critical; sustained reasoning required."
+assert lines[2] == "EFFICIENCY: Run /clear before starting another collab."
+assert lines[3] == "closed"
+assert lines[4] == "NOTICE: Run /clear before starting another collab."
+PY
 python3 - "$execution_registry" <<'PY' || fail "registry helper: all completed assigned execution must close record"
 import json
 import sys
@@ -478,9 +593,9 @@ cat >"$live_registry" <<'JSON'
       "activePhase": "Discussion",
       "moderatorRole": "mod",
       "participants": [
-        {"role": "mod", "agentId": ""},
-        {"role": "tw", "agentId": ""},
-        {"role": "pe", "agentId": ""}
+        {"role": "mod", "agentId": "cursor-composer"},
+        {"role": "tw", "agentId": "claude-sonnet-4-6"},
+        {"role": "pe", "agentId": "gpt-5"}
       ],
       "turnOrder": ["mod", "tw", "pe"],
       "transcriptPath": ".collabs/records/2026-04-27-alpha.md",
@@ -526,9 +641,266 @@ state = json.load(open(sys.argv[1]))
 assert state["activePhase"] == "Discussion"
 assert state["contributors"] == ["mod", "tw"]
 assert state["expectedRole"] == "pe"
+assert state["expectedAgentId"] == "gpt-5"
+assert state["roleAgentId"] == "gpt-5"
+assert state["freshRegistryRead"] is True
+assert state["freshTranscriptRead"] is True
+PY
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha pe --resume >resume-ready.json)
+python3 - "$live_root/resume-ready.json" <<'PY' || fail "registry helper: resume signal must mark the expected role ready from live files"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["target"] == "2026-04-27-alpha"
+assert state["activePhase"] == "Discussion"
+assert state["turnOrder"] == ["mod", "tw", "pe"]
+assert state["contributors"] == ["mod", "tw"]
+assert state["lastContributor"] == "tw"
+assert state["expectedRole"] == "pe"
+assert state["allowedRoles"] == ["pe"]
+assert state["roleAgentId"] == "gpt-5"
+assert state["readyToWrite"] is True
+assert isinstance(state["registryRevision"], int)
+assert state["reviewerState"] == {"reviewerRole": None, "state": "absent"}
+assert state["freshRegistryRead"] is True
+assert state["freshTranscriptRead"] is True
+PY
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha tw --resume >resume-blocked.json)
+python3 - "$live_root/resume-blocked.json" <<'PY' || fail "registry helper: resume signal must report non-ready roles without aborting"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["expectedRole"] == "pe"
+assert state["allowedRoles"] == ["pe"]
+assert state["readyToWrite"] is False
 PY
 [[ "$(cat "$live_root/source.txt")" == "source sentinel" ]] || fail "registry helper: speak-state must not edit source files outside .collabs"
 ! (cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha tw >/dev/null 2>&1) || fail "registry helper: speak-state must reject a stale expected role"
+
+speak_render_root="$tmpdir/speak-render"
+mkdir -p "$speak_render_root/.collabs/records"
+cp "$live_registry" "$speak_render_root/.collabs/registry.json"
+cat >"$speak_render_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+**Status**
+
+| Status | Active phase | Turn order | Reviewer |
+|--------|--------------|------------|----------|
+| open | Discussion | stale | — |
+
+**Table of contents**
+
+- [Audit](#audit)
+- [Discussion](#discussion)
+  - [mod](#discussion-mod-1)
+  - [tw](#discussion-tw-1)
+- [Conclusion](#conclusion)
+- [Action Plan](#action-plan)
+- [Handoff](#handoff)
+- [Completion](#completion)
+
+---
+
+## Audit
+
+## Discussion
+
+<a name="discussion-mod-1"></a>
+<details>
+<summary>mod</summary>
+one
+</details>
+
+<a name="discussion-tw-1"></a>
+<details>
+<summary>tw</summary>
+two
+</details>
+
+## Conclusion
+
+## Action Plan
+
+## Handoff
+
+## Completion
+MD
+cat >"$speak_render_root/content.md" <<'MD'
+EFFORT OVERRIDE: high — implementation-density: a single turn spans helper output and tests
+three
+**literal body stays literal**
+MD
+revision="$(registry_revision "$speak_render_root" alpha pe)"
+(cd "$speak_render_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha pe --content-file content.md --observed-revision "$revision" --timestamp '2026-04-28 09:10 +00:00' >speak-render.out)
+python3 - "$speak_render_root/speak-render.out" "$speak_render_root/.collabs/registry.json" <<'PY' || fail "registry helper: speak-render must return append and lifecycle output without hand-authored transcript work"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "BOUNDARY: transcript write only; no shell commands or file edits outside .collabs/"
+assert lines[1] == "SUCCINCTLY: stay within role concerns; do not pad or summarize other roles"
+assert lines[2] == "RETRACT: use /collab retract speak to tombstone the latest active-phase contribution"
+assert any(line.startswith("HEADER-OVERWRITE:") for line in lines)
+assert "NEXT: Run /compact before your next collab command for role pe." in lines
+assert "EFFORT: medium for pe in Conclusion — next-turn recommendation; Standard contribution; analysis and synthesis without deep implementation." in lines
+assert "EFFICIENCY: Run /compact before next collab command." in lines
+assert "appended" in lines
+assert json.loads(open(sys.argv[2]).read())["collabs"][0]["activePhase"] == "Discussion"
+assert "PHASE: unchanged" in lines
+assert "NOTICE: Run /compact before issuing your next collab command." in lines
+PY
+grep -Fq '  - [pe](#discussion-pe-1)' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must insert TOC sub-item"
+grep -Fq '<a name="discussion-pe-1"></a>' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must derive next anchor"
+grep -Fq '<summary>pe</summary>' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must render role-only summary"
+grep -Fq '<p><em>2026-04-28 09:10 +00:00</em></p>' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must render timestamp scaffold"
+grep -Fq '**literal body stays literal**' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must preserve supplied content"
+grep -Fq '| open | Discussion | mod, tw, pe | — |' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must refresh stale status table from registry"
+python3 - "$speak_render_root/.collabs/records/2026-04-27-alpha.md" <<'PY' || fail "registry helper: speak-render must store override metadata while hiding it from prose"
+import base64
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+marker = '<!-- collab:content-only; do-not-execute -->'
+for index, line in enumerate(lines):
+    if line == marker:
+        following = [item for item in lines[index + 1:] if item]
+        if (
+            len(following) >= 2
+            and following[0].startswith('<!-- collab:effort-override b64:')
+            and following[0].endswith(' -->')
+            and following[1] == 'three'
+        ):
+            payload = following[0].removeprefix('<!-- collab:effort-override b64:').removesuffix(' -->')
+            decoded = base64.urlsafe_b64decode(payload.encode()).decode()
+            assert decoded.startswith('EFFORT OVERRIDE: high — implementation-density:')
+            assert not following[0].startswith('EFFORT OVERRIDE:')
+            break
+else:
+    raise AssertionError('override metadata not first hidden content line')
+PY
+cat >"$speak_render_root/content2.md" <<'MD'
+second pe turn
+MD
+revision="$(registry_revision "$speak_render_root" alpha mod)"
+(cd "$speak_render_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha mod --content-file content2.md --observed-revision "$revision" --timestamp '2026-04-28 09:11 +00:00' >/dev/null)
+grep -Fq '  - [mod](#discussion-mod-2)' "$speak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must increment anchor counters by role"
+
+wrong_turn_render="$tmpdir/speak-render-wrong-turn"
+cp -R "$speak_render_root" "$wrong_turn_render"
+revision="$(registry_revision "$wrong_turn_render" alpha pe)"
+wrong_turn_output="$({ cd "$wrong_turn_render" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha pe --content-file content.md --observed-revision "$revision"; } 2>&1 || true)"
+[[ "$wrong_turn_output" == expected\ role:* ]] || fail "registry helper: speak-render must reject wrong-turn roles"
+[[ "$wrong_turn_output" != *"EFFORT:"* && "$wrong_turn_output" != *"EFFICIENCY:"* && "$wrong_turn_output" != *"BOUNDARY:"* ]] || fail "registry helper: failed speak-render must not emit advisory lines"
+
+stale_render="$tmpdir/speak-render-stale"
+cp -R "$speak_render_root" "$stale_render"
+python3 - "$stale_render/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+data["revision"] = data.get("revision", 0) + 1
+json.dump(data, open(path, "w"))
+PY
+stale_output="$({ cd "$stale_render" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha pe --content-file content.md --observed-revision 0; } 2>&1 || true)"
+[[ "$stale_output" == stale\ registry\ revision:* ]] || fail "registry helper: stale speak-render must report revision mismatch"
+grep -Fq 'RESUME: tools/collab/registry.py speak-state --resume 2026-04-27-alpha pe' <<<"$stale_output" || fail "registry helper: stale speak-render must emit exact RESUME command"
+! grep -Fq 'BOUNDARY:' <<<"$stale_output" || fail "registry helper: stale speak-render must abort before pre-write advisories"
+
+one_speak_render="$tmpdir/speak-render-one-speak"
+mkdir -p "$one_speak_render/.collabs/records"
+cp "$live_registry" "$one_speak_render/.collabs/registry.json"
+python3 - "$one_speak_render/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Action Plan"
+entry["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+cat >"$one_speak_render/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+**Status**
+
+| Status | Active phase | Turn order | Reviewer |
+|--------|--------------|------------|----------|
+| open | Action Plan | tw, pe | — |
+
+**Table of contents**
+
+- [Audit](#audit)
+- [Discussion](#discussion)
+- [Conclusion](#conclusion)
+- [Action Plan](#action-plan)
+  - [tw](#action-plan-tw-1)
+- [Handoff](#handoff)
+- [Completion](#completion)
+
+---
+
+## Audit
+
+## Discussion
+
+## Conclusion
+
+## Action Plan
+
+<a name="action-plan-tw-1"></a>
+<details>
+<summary>tw</summary>
+one
+</details>
+
+## Handoff
+
+## Completion
+MD
+cp "$speak_render_root/content.md" "$one_speak_render/content.md"
+revision="$(registry_revision "$one_speak_render" alpha pe)"
+(cd "$one_speak_render" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha pe --content-file content.md --observed-revision "$revision" --timestamp '2026-04-28 10:00 +00:00' >transition.txt)
+python3 - "$one_speak_render/transition.txt" "$one_speak_render/.collabs/registry.json" <<'PY' || fail "registry helper: speak-render must own lifecycle transition after append"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "BOUNDARY: transcript write only; no shell commands or file edits outside .collabs/"
+assert lines[1] == "SUCCINCTLY: stay within role concerns; do not pad or summarize other roles"
+assert lines[2] == "RETRACT: use /collab retract speak to tombstone the latest active-phase contribution"
+assert any(line.startswith("HEADER-OVERWRITE:") for line in lines)
+assert "NEXT: Run /collab speak for role tw." in lines
+assert "EFFORT: high for pe in Handoff — next-turn recommendation; Implementation-bearing or convergence-critical; sustained reasoning required." in lines
+assert "appended" in lines
+assert "PHASE: Handoff" in lines
+data = json.load(open(sys.argv[2]))
+assert data["collabs"][0]["activePhase"] == "Handoff"
+PY
+grep -Fq '| open | Handoff | tw, pe | — |' "$one_speak_render/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: speak-render must mirror lifecycle status table changes"
+python3 - "$one_speak_render/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Action Plan"
+entry["turnOrder"] = ["pe"]
+json.dump(data, open(path, "w"))
+PY
+revision="$(registry_revision "$one_speak_render" alpha pe)"
+! (cd "$one_speak_render" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha pe --content-file content.md --observed-revision "$revision" >/dev/null 2>&1) || fail "registry helper: speak-render must reject duplicate one-speak phase entries"
+
+respeak_render_root="$tmpdir/rewrite-speak-render"
+cp -R "$speak_render_root" "$respeak_render_root"
+cat >"$respeak_render_root/rewrite-content.md" <<'MD'
+replacement body
+MD
+(cd "$respeak_render_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json rewrite-speak-render alpha pe --content-file rewrite-content.md --timestamp '2026-04-28 11:00 +00:00' >/dev/null)
+grep -Fq '<a name="discussion-pe-1"></a>' "$respeak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-speak-render must preserve anchor identity"
+grep -Fq 'replacement body' "$respeak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-speak-render must write replacement body"
+grep -Fq '<details><summary>Revision history</summary>' "$respeak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-speak-render must preserve prior content in revision history"
+grep -Fq 'Previous revision, 2026-04-28 09:10 +00:00:' "$respeak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-speak-render must label previous timestamp"
+! grep -Fq '  - [pe](#discussion-pe-2)' "$respeak_render_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-speak-render must not add TOC entries"
 
 nested_history_root="$tmpdir/nested-history"
 mkdir -p "$nested_history_root/.collabs/records"
@@ -587,7 +959,8 @@ one
 two
 </details>
 MD
-(cd "$live_root" && [[ "$(python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha)" == "Handoff" ]]) || fail "registry helper: live lifecycle must auto-advance completed one-speak phases"
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >live-handoff.txt)
+grep -Fxq "Handoff" "$live_root/live-handoff.txt" || fail "registry helper: live lifecycle must auto-advance completed one-speak phases"
 python3 - "$live_registry" <<'PY' || fail "registry helper: live lifecycle must persist helper-owned auto-advance"
 import json
 import sys
@@ -622,7 +995,8 @@ nested note, not a top-level contribution
 two
 </details>
 MD
-(cd "$live_root" && [[ "$(python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha)" == "Handoff" ]]) || fail "registry helper: contribution parser must ignore body labels and nested details summaries"
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >nested-handoff.txt)
+grep -Fxq "Handoff" "$live_root/nested-handoff.txt" || fail "registry helper: contribution parser must ignore body labels and nested details summaries"
 python3 - "$live_registry" <<'PY'
 import json
 import sys
@@ -631,6 +1005,45 @@ data = json.load(open(path))
 data["collabs"][0]["activePhase"] = "Discussion"
 data["collabs"][0]["turnOrder"] = ["mod", "tw", "pe"]
 json.dump(data, open(path, "w"))
+PY
+cat >"$live_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Discussion
+
+<details>
+<summary>mod</summary>
+one
+</details>
+MD
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >moderator-discussion.txt)
+grep -Fxq "unchanged" "$live_root/moderator-discussion.txt" || fail "registry helper: moderator Discussion turn must not emit compact advisory"
+cat >"$live_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Discussion
+
+<details>
+<summary>mod</summary>
+one
+</details>
+
+<details>
+<summary>tw</summary>
+two
+</details>
+MD
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >discussion-turn.txt)
+python3 - "$live_root/discussion-turn.txt" <<'PY' || fail "registry helper: live lifecycle must emit compact advisory after non-moderator Discussion turns"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+phase_index = lines.index("unchanged")
+notice = json.loads(lines[phase_index + 1])
+assert notice["notice"] == "compact"
+assert notice["transition"] == "Discussion-turn"
+assert notice["compactBeforeNextCommand"] is True
+assert notice["message"] == "Run /compact before issuing your next collab command."
 PY
 cat >"$live_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
 # alpha
@@ -652,7 +1065,52 @@ two
 three
 </details>
 MD
-(cd "$live_root" && [[ "$(python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha)" == "unchanged" ]]) || fail "registry helper: live lifecycle must exempt Discussion from auto-advance"
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >discussion-transition.txt)
+python3 - "$live_root/discussion-transition.txt" <<'PY' || fail "registry helper: completed Discussion round must keep local compact advisory shape"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+phase_index = lines.index("unchanged")
+notice = json.loads(lines[phase_index + 1])
+assert notice["notice"] == "compact"
+assert notice["transition"] == "Discussion-turn"
+assert notice["compactBeforeNextCommand"] is True
+PY
+python3 - "$live_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+data["collabs"][0]["activePhase"] = "Handoff"
+data["collabs"][0]["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+cat >"$live_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Handoff
+
+<details>
+<summary>tw</summary>
+one
+</details>
+
+<details>
+<summary>pe</summary>
+two
+</details>
+MD
+(cd "$live_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >handoff-transition.txt)
+python3 - "$live_root/handoff-transition.txt" <<'PY' || fail "registry helper: Handoff transition must not emit deferred compact-before-next advisory"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+phase_index = lines.index("Completion")
+notice = json.loads(lines[phase_index + 1])
+assert notice["notice"] == "subagent"
+assert notice["transition"] == "Handoff->Completion"
+assert "compactBeforeNextCommand" not in notice
+PY
 
 reviewer_live="$tmpdir/reviewer-live"
 mkdir -p "$reviewer_live/.collabs/records"
@@ -691,9 +1149,21 @@ import sys
 state = json.load(open(sys.argv[1]))
 assert state["expectedRole"] == "pa"
 assert state["reviewerRole"] == "pa"
+assert state["reviewerState"] == {"reviewerRole": "pa", "state": "active"}
 assert state["turnOrder"] == ["mod", "tw", "pe"]
 PY
-(cd "$reviewer_live" && [[ "$(python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha)" == "unchanged" ]]) || fail "registry helper: reviewer-required Audit must not advance before reviewer speaks"
+(cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha pa --resume >reviewer-resume.json)
+python3 - "$reviewer_live/reviewer-resume.json" <<'PY' || fail "registry helper: resume signal must admit required reviewer in convergent phases"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["expectedRole"] == "pa"
+assert state["allowedRoles"] == ["pa"]
+assert state["readyToWrite"] is True
+assert state["reviewerState"] == {"reviewerRole": "pa", "state": "active"}
+PY
+(cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >reviewer-wait.txt)
+grep -Fxq "unchanged" "$reviewer_live/reviewer-wait.txt" || fail "registry helper: reviewer-required Audit must not advance before reviewer speaks"
 cat >>"$reviewer_live/.collabs/records/2026-04-27-alpha.md" <<'MD'
 
 <details>
@@ -701,7 +1171,8 @@ cat >>"$reviewer_live/.collabs/records/2026-04-27-alpha.md" <<'MD'
 four
 </details>
 MD
-(cd "$reviewer_live" && [[ "$(python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha)" == "Discussion" ]]) || fail "registry helper: reviewer-complete Audit must advance"
+(cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >reviewer-advance.txt)
+grep -Fxq "Discussion" "$reviewer_live/reviewer-advance.txt" || fail "registry helper: reviewer-complete Audit must advance"
 
 python3 - "$reviewer_live_registry" <<'PY'
 import json
@@ -751,6 +1222,90 @@ state = json.load(open(sys.argv[1]))
 assert state["expectedRole"] == "mod"
 assert "pa" in state["allowedRoles"]
 PY
+(cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha pa --resume >optional-resume.json)
+python3 - "$reviewer_live/optional-resume.json" <<'PY' || fail "registry helper: resume signal must admit optional Discussion reviewer"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["expectedRole"] == "mod"
+assert state["allowedRoles"] == ["mod", "pa"]
+assert state["readyToWrite"] is True
+PY
+optional_render_root="$tmpdir/optional-render"
+mkdir -p "$optional_render_root/.collabs/records"
+cp "$reviewer_live_registry" "$optional_render_root/.collabs/registry.json"
+cat >"$optional_render_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+**Status**
+
+| Status | Active phase | Turn order | Reviewer |
+|--------|--------------|------------|----------|
+| open | Discussion | mod, tw, pe | pa |
+
+**Table of contents**
+
+- [Audit](#audit)
+- [Discussion](#discussion)
+  - [mod](#discussion-mod-1)
+  - [tw](#discussion-tw-1)
+  - [pe](#discussion-pe-1)
+- [Conclusion](#conclusion)
+- [Action Plan](#action-plan)
+- [Handoff](#handoff)
+- [Completion](#completion)
+
+---
+
+## Audit
+
+## Discussion
+
+<a name="discussion-mod-1"></a>
+<details>
+<summary>mod</summary>
+one
+</details>
+
+<a name="discussion-tw-1"></a>
+<details>
+<summary>tw</summary>
+two
+</details>
+
+<a name="discussion-pe-1"></a>
+<details>
+<summary>pe</summary>
+three
+</details>
+
+## Conclusion
+
+## Action Plan
+
+## Handoff
+
+## Completion
+MD
+cat >"$optional_render_root/pa.md" <<'MD'
+reviewer tail
+MD
+revision="$(registry_revision "$optional_render_root" alpha pa)"
+(cd "$optional_render_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-render alpha pa --content-file pa.md --observed-revision "$revision" --timestamp '2026-04-28 09:20 +00:00' >optional-render.out)
+python3 - "$optional_render_root/optional-render.out" <<'PY' || fail "registry helper: optional reviewer Discussion speak must emit reviewer Conclusion effort"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "BOUNDARY: transcript write only; no shell commands or file edits outside .collabs/"
+assert lines[1] == "SUCCINCTLY: stay within role concerns; do not pad or summarize other roles"
+assert lines[2] == "RETRACT: use /collab retract speak to tombstone the latest active-phase contribution"
+assert any(line.startswith("HEADER-OVERWRITE:") for line in lines)
+assert "NEXT: Run /compact before your next collab command for role pa." in lines
+assert "EFFORT: xhigh for pa in Conclusion — next-turn recommendation; Convergent gate or reviewer pass; one bad judgment propagates; elevate before speaking." in lines
+assert "EFFICIENCY: Run /compact before next collab command." in lines
+assert "appended" in lines
+assert "PHASE: unchanged" in lines
+assert "NOTICE: Run /compact before issuing your next collab command." in lines
+PY
 cat >>"$reviewer_live/.collabs/records/2026-04-27-alpha.md" <<'MD'
 
 <details>
@@ -795,18 +1350,176 @@ PY
 grep -Fq '| Status | Active phase | Turn order | Reviewer |' "$reviewer_live/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-status must add Reviewer cell"
 grep -Fq '| open | Discussion | mod, tw, pe | pa |' "$reviewer_live/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-status must mirror reviewer"
 
-python3 "$ROOT/tools/collab/registry.py" --registry "$reviewer_live_registry" execution alpha pe completed 2026-04-28 --assigned-role pe --validation-result passed --touched-path tools/collab/registry.py >/dev/null
-python3 - "$reviewer_live_registry" <<'PY' || fail "registry helper: execution metadata must record validation result and touched paths"
+python3 "$ROOT/tools/collab/registry.py" --registry "$reviewer_live_registry" execution alpha pe completed 2026-04-28 --assigned-role pe --validation-result passed --validation-scope scoped --touched-path tools/collab/registry.py >/dev/null
+python3 - "$reviewer_live_registry" <<'PY' || fail "registry helper: execution metadata must record validation result, scope, and touched paths"
 import json
 import sys
 data = json.load(open(sys.argv[1]))
 state = data["collabs"][0]["execution"]["pe"]
 assert state["validationResult"] == "passed"
+assert state["validationScope"] == "scoped"
 assert state["touchedPaths"] == ["tools/collab/registry.py"]
 PY
+invalid_scope_registry="$tmpdir/invalid-validation-scope.json"
+cp "$reviewer_live_registry" "$invalid_scope_registry"
+python3 - "$invalid_scope_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+data["collabs"][0]["execution"]["pe"]["validationScope"] = "repository"
+json.dump(data, open(path, "w"))
+PY
+! python3 "$ROOT/tools/collab/registry.py" --registry "$invalid_scope_registry" validate >/dev/null 2>&1 || fail "registry helper: execution validationScope must reject unknown values"
 python3 "$ROOT/tools/collab/registry.py" write-guard speak .collabs/records/alpha.md >/dev/null
 ! python3 "$ROOT/tools/collab/registry.py" write-guard speak README.md >/dev/null 2>&1 || fail "registry helper: non-execute routes must be guarded to .collabs writes"
 python3 "$ROOT/tools/collab/registry.py" write-guard execute README.md >/dev/null
+
+caller_reject="$({ cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json advance alpha next --caller-role pe; } 2>&1 || true)"
+[[ "$caller_reject" == "advance requires moderator role: mod" ]] || fail "registry helper: advance caller-role gate must reject non-moderators"
+caller_set_reject="$({ cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json set alpha title nope --caller-role pe; } 2>&1 || true)"
+[[ "$caller_set_reject" == "set requires moderator role: mod" ]] || fail "registry helper: set caller-role gate must reject non-moderators"
+caller_execution_reject="$({ cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json execution alpha pe completed 2026-04-28 --caller-role tw; } 2>&1 || true)"
+[[ "$caller_execution_reject" == "execution caller role must match subject role: pe" ]] || fail "registry helper: execution caller-role gate must reject mismatched roles"
+caller_moderator_execution_reject="$({ cd "$reviewer_live" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json execution alpha mod completed 2026-04-28 --caller-role mod; } 2>&1 || true)"
+[[ "$caller_moderator_execution_reject" == "execution role must not be the moderator" ]] || fail "registry helper: execution must reject moderator role"
+
+execution_guard_root="$tmpdir/execution-guard"
+mkdir -p "$execution_guard_root/.collabs/records"
+cat >"$execution_guard_root/.collabs/registry.json" <<'JSON'
+{
+  "schemaVersion": 1,
+  "activeCollabId": "2026-04-27-alpha",
+  "collabs": [
+    {
+      "id": "2026-04-27-alpha",
+      "slug": "alpha",
+      "title": "alpha",
+      "description": "alpha collab",
+      "status": "open",
+      "activePhase": "Completion",
+      "moderatorRole": "mod",
+      "participants": [
+        {"role": "mod", "agentId": "cursor-composer"},
+        {"role": "tw", "agentId": "claude-sonnet-4-6"},
+        {"role": "pe", "agentId": "gpt-5"},
+        {"role": "pa", "agentId": "claude-opus-4-7"}
+      ],
+      "turnOrder": ["tw", "pe"],
+      "reviewerRole": "pa",
+      "reviewerMode": "last-in-convergent-phases",
+      "reviewerOptionalPhases": ["Discussion"],
+      "transcriptPath": ".collabs/records/2026-04-27-alpha.md",
+      "archived": false,
+      "execution": {}
+    }
+  ]
+}
+JSON
+cat >"$execution_guard_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+**Status**
+
+| Status | Active phase | Turn order | Reviewer |
+|--------|--------------|------------|----------|
+| open | Completion | tw, pe | pa |
+
+## Action Plan
+
+<details>
+<summary>tw</summary>
+
+- [x] **tw:** Done.
+- [ ] **pe:** Implement guard.
+
+</details>
+
+## Completion
+MD
+before_guard_registry="$(cat "$execution_guard_root/.collabs/registry.json")"
+guard_reject="$({ cd "$execution_guard_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json execution alpha pe completed 2026-04-28; } 2>&1 || true)"
+[[ "$guard_reject" == "execution completed blocked for role pe: 1 unchecked assigned Action Plan item(s) remain" ]] || fail "registry helper: execution completion guard must name role and unchecked count"
+[[ "$(cat "$execution_guard_root/.collabs/registry.json")" == "$before_guard_registry" ]] || fail "registry helper: rejected execution completion must leave registry unchanged"
+python3 - "$execution_guard_root/.collabs/records/2026-04-27-alpha.md" <<'PY'
+import pathlib
+import sys
+path = pathlib.Path(sys.argv[1])
+path.write_text(path.read_text().replace("- [ ] **pe:** Implement guard.", "- [x] **pe:** Implement guard."))
+PY
+(cd "$execution_guard_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json execution alpha pe completed 2026-04-28 >/dev/null)
+python3 - "$execution_guard_root/.collabs/registry.json" <<'PY' || fail "registry helper: execution completion guard must permit completion after assigned items are checked"
+import json
+import sys
+entry = json.load(open(sys.argv[1]))["collabs"][0]
+assert entry["execution"]["pe"]["status"] == "completed"
+PY
+python3 - "$execution_guard_root/.collabs/registry.json" "$execution_guard_root/.collabs/records/2026-04-27-alpha.md" <<'PY'
+import json
+import pathlib
+import sys
+registry_path, transcript_path = sys.argv[1:]
+data = json.load(open(registry_path))
+entry = data["collabs"][0]
+entry["execution"] = {}
+json.dump(data, open(registry_path, "w"))
+transcript = pathlib.Path(transcript_path)
+transcript.write_text(transcript.read_text().replace("- [x] **pe:** Implement guard.", "- [ ] **pe:** Implement guard."))
+PY
+(cd "$execution_guard_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha pe --resume >state.json)
+python3 - "$execution_guard_root/state.json" <<'PY' || fail "registry helper: reviewer speak-state must include unchecked assigned item counts by role"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["uncheckedAssignedItemsByRole"] == {"pe": 1, "tw": 0}
+PY
+python3 - "$execution_guard_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["execution"] = {"pe": {"status": "completed", "date": "2026-04-28"}}
+json.dump(data, open(path, "w"))
+PY
+close_guard_reject="$({ cd "$execution_guard_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json close alpha; } 2>&1 || true)"
+[[ "$close_guard_reject" == "close blocked: completed execution has unchecked assigned Action Plan item(s): pe=1" ]] || fail "registry helper: close must reject completed execution with unchecked assigned items"
+audit_guard_output="$(cd "$execution_guard_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json audit-closed)"
+[[ "$audit_guard_output" == "[]" ]] || fail "registry helper: audit-closed must ignore open collabs"
+python3 - "$execution_guard_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["status"] = "closed"
+data["activeCollabId"] = None
+json.dump(data, open(path, "w"))
+PY
+before_audit_closed="$(cat "$execution_guard_root/.collabs/registry.json")"
+audit_guard_output="$(cd "$execution_guard_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json audit-closed)"
+[[ "$audit_guard_output" == '[{"role": "pe", "target": "2026-04-27-alpha", "uncheckedCount": 1}]' ]] || fail "registry helper: audit-closed must report closed collabs with completed roles and unchecked assigned items"
+[[ "$(cat "$execution_guard_root/.collabs/registry.json")" == "$before_audit_closed" ]] || fail "registry helper: audit-closed must not mutate registry"
+
+execute_spawn_registry="$tmpdir/execute-spawn.json"
+cp "$reviewer_live_registry" "$execute_spawn_registry"
+python3 - "$execute_spawn_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Completion"
+entry["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha pe --scope tools/collab --sibling-scope tests/tools/collab --returned-path tools/collab/registry.py >/dev/null
+python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha pe --scope tests/tools/collab --sibling-scope tools/collab --returned-path tests/tools/collab/registry.py/registry.py__validates_registry_flows.test.sh >/dev/null
+! python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha pe --scope tools --sibling-scope tools/collab >/dev/null 2>&1 || fail "registry helper: execute-spawn must reject overlapping write scopes"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha pe --scope tools/collab --returned-path README.md >/dev/null 2>&1 || fail "registry helper: execute-spawn must reject returned paths outside declared scopes"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha pe --scope tools/collab --sibling-scope tests/tools/collab --returned-path tests/tools/collab/registry.py/registry.py__validates_registry_flows.test.sh >/dev/null 2>&1 || fail "registry helper: execute-spawn must bind returned paths to the assigned scope, not sibling scopes"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha missing --scope tools/collab >/dev/null 2>&1 || fail "registry helper: execute-spawn must reject unregistered roles"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$execute_spawn_registry" execute-spawn alpha pe --scope ../outside >/dev/null 2>&1 || fail "registry helper: execute-spawn must reject parent-relative scopes"
 
 join_root="$tmpdir/join-live"
 mkdir -p "$join_root/.collabs/records"
@@ -824,8 +1537,8 @@ cat >"$join_root/.collabs/registry.json" <<'JSON'
       "activePhase": "Audit",
       "moderatorRole": "mod",
       "participants": [
-        {"role": "mod", "agentId": "Cursor Composer"},
-        {"role": "tw", "agentId": "Claude Sonnet"}
+        {"role": "mod", "agentId": "cursor-composer"},
+        {"role": "tw", "agentId": "claude-sonnet-4-6"}
       ],
       "turnOrder": ["mod", "tw"],
       "transcriptPath": ".collabs/records/2026-04-27-alpha.md",
@@ -853,11 +1566,45 @@ cat >"$join_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
 ## Audit
 MD
 (cd "$join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json render-participants alpha --roles-dir "$ROOT/cursor/_roles" >/dev/null)
-grep -Fq '| 1 | mod | Moderator | Cursor Composer | scope; sequencing; framing; pacing; integrity |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-participants must render mod from registry"
-grep -Fq '| 2 | tw | Technical Writer | Claude Sonnet | clarity; conciseness; accuracy; developer experience |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-participants must render tw from registry order"
+grep -Fq '| 1 | mod | Moderator | cursor-composer | scope; sequencing; framing; pacing; integrity |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-participants must render mod from registry"
+grep -Fq '| 2 | tw | Technical Writer | claude-sonnet-4-6 | clarity; conciseness; accuracy; developer experience |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-participants must render tw from registry order"
 ! grep -Fq 'Stale Writer' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: render-participants must replace stale table rows"
 
-(cd "$join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "Codex GPT" >/dev/null)
+(cd "$join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "gpt-5" >join.out)
+python3 - "$join_root/join.out" <<'PY' || fail "registry helper: join-participants must emit NEXT and current-phase effort advisory"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert "NEXT: Run /collab show policy before first speak." in lines
+assert "EFFORT: medium for pe in Audit — next-turn recommendation; Standard contribution; analysis and synthesis without deep implementation." in lines
+assert "IDENTITY: pe gpt-5" in lines
+assert "mod tw pe" in lines
+PY
+(cd "$join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "gpt-5" --json >join-json.out)
+python3 - "$join_root/join-json.out" <<'PY' || fail "registry helper: join-participants --json must append structured participant state only when requested"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert "NEXT: Run /collab show policy before first speak." in lines
+assert "EFFORT: medium for pe in Audit — next-turn recommendation; Standard contribution; analysis and synthesis without deep implementation." in lines
+assert "IDENTITY: pe gpt-5" in lines
+assert "mod tw pe" in lines
+payload = json.loads(lines[-1])
+assert payload["agentId"] == "gpt-5"
+assert payload["freshRegistryRead"] is True
+assert payload["identityWarning"] is None
+assert payload["participants"] == ["mod", "tw", "pe"]
+assert payload["target"] == "2026-04-27-alpha"
+PY
+conflict_output="$({ cd "$join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "gpt-5.4-mini"; } 2>&1)"
+grep -Fq 'IDENTITY: pe gpt-5' <<<"$conflict_output" || fail "registry helper: re-join must report captured at-join identity"
+grep -Fq 'IDENTITY-WARN: pe already joined as gpt-5; supplied agentId gpt-5.4-mini ignored' <<<"$conflict_output" || fail "registry helper: re-join must warn on conflicting supplied identity"
+python3 - "$join_root/.collabs/registry.json" <<'PY' || fail "registry helper: conflicting re-join must not overwrite captured identity"
+import json
+import sys
+data = json.load(open(sys.argv[1]))
+entry = data["collabs"][0]
+assert entry["participants"][2] == {"role": "pe", "agentId": "gpt-5"}
+PY
 python3 - "$join_root/.collabs/registry.json" <<'PY' || fail "registry helper: join-participants must persist participant and turn-order changes"
 import json
 import sys
@@ -867,7 +1614,7 @@ assert [p["role"] for p in entry["participants"]] == ["mod", "tw", "pe"]
 assert entry["turnOrder"] == ["mod", "tw", "pe"]
 PY
 grep -Fq '| open | Audit | mod, tw, pe | — |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must render status from next registry state"
-grep -Fq '| 3 | pe | Platform Engineer | Codex GPT | effectiveness; efficiency; completeness; optimization |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must render joined role in participants table"
+grep -Fq '| 3 | pe | Platform Engineer | gpt-5 | effectiveness; efficiency; completeness; optimization |' "$join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must render joined role in participants table"
 
 reviewer_join_root="$tmpdir/reviewer-join"
 mkdir -p "$reviewer_join_root/.collabs/records"
@@ -885,8 +1632,8 @@ cat >"$reviewer_join_root/.collabs/registry.json" <<'JSON'
       "activePhase": "Audit",
       "moderatorRole": "mod",
       "participants": [
-        {"role": "mod", "agentId": "Cursor Composer"},
-        {"role": "tw", "agentId": "Claude Sonnet"}
+        {"role": "mod", "agentId": "cursor-composer"},
+        {"role": "tw", "agentId": "claude-sonnet-4-6"}
       ],
       "turnOrder": ["mod", "tw"],
       "reviewerRole": "pa",
@@ -912,8 +1659,8 @@ cat >"$reviewer_join_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
 
 | # | Key | Role | Agent | Responsibilities |
 |---|-----|------|-------|------------------|
-| 1 | mod | Moderator | Cursor Composer | scope; sequencing; framing; pacing; integrity |
-| 2 | tw | Technical Writer | Claude Sonnet | clarity; conciseness; accuracy; developer experience |
+| 1 | mod | Moderator | cursor-composer | scope; sequencing; framing; pacing; integrity |
+| 2 | tw | Technical Writer | claude-sonnet-4-6 | clarity; conciseness; accuracy; developer experience |
 
 Agents must wait for the moderator to call `/collab speak` before contributing.
 
@@ -929,7 +1676,7 @@ Agents must wait for the moderator to call `/collab speak` before contributing.
 
 ## Audit
 MD
-(cd "$reviewer_join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pa --roles-dir "$ROOT/cursor/_roles" --agent-id "Claude Opus" >/dev/null)
+(cd "$reviewer_join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pa --roles-dir "$ROOT/cursor/_roles" --agent-id "claude-opus-4-7" >/dev/null)
 grep -Fq '**pa** — registered in **Participants** and active as the convergent-phase reviewer' "$reviewer_join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must flip reviewer section to active when reviewer joins"
 ! grep -Fq '(pending)' "$reviewer_join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must remove (pending) label when reviewer joins"
 
@@ -941,8 +1688,8 @@ path = sys.argv[1]
 data = json.load(open(path))
 entry = data["collabs"][0]
 entry["participants"] = [
-    {"role": "mod", "agentId": "Cursor Composer"},
-    {"role": "tw", "agentId": "Claude Sonnet"},
+    {"role": "mod", "agentId": "cursor-composer"},
+    {"role": "tw", "agentId": "claude-sonnet-4-6"},
 ]
 entry["turnOrder"] = ["mod", "tw"]
 json.dump(data, open(path, "w"))
@@ -960,8 +1707,8 @@ cat >"$non_reviewer_join_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
 
 | # | Key | Role | Agent | Responsibilities |
 |---|-----|------|-------|------------------|
-| 1 | mod | Moderator | Cursor Composer | scope; sequencing; framing; pacing; integrity |
-| 2 | tw | Technical Writer | Claude Sonnet | clarity; conciseness; accuracy; developer experience |
+| 1 | mod | Moderator | cursor-composer | scope; sequencing; framing; pacing; integrity |
+| 2 | tw | Technical Writer | claude-sonnet-4-6 | clarity; conciseness; accuracy; developer experience |
 
 Agents must wait for the moderator to call `/collab speak` before contributing.
 
@@ -977,7 +1724,7 @@ Agents must wait for the moderator to call `/collab speak` before contributing.
 
 ## Audit
 MD
-(cd "$non_reviewer_join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "Codex GPT" >/dev/null)
+(cd "$non_reviewer_join_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "gpt-5" >/dev/null)
 grep -Fq '(pending)' "$non_reviewer_join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must keep (pending) label when a non-reviewer role joins"
 ! grep -Fq 'active as the convergent-phase reviewer' "$non_reviewer_join_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must not flip reviewer to active when non-reviewer joins"
 
@@ -990,17 +1737,56 @@ path = sys.argv[1]
 data = json.load(open(path))
 entry = data["collabs"][0]
 entry["participants"] = [
-    {"role": "mod", "agentId": "Cursor Composer"},
-    {"role": "tw", "agentId": "Claude Sonnet"},
+    {"role": "mod", "agentId": "cursor-composer"},
+    {"role": "tw", "agentId": "claude-sonnet-4-6"},
 ]
 entry["turnOrder"] = ["mod", "tw"]
 json.dump(data, open(path, "w"))
 PY
 before_registry="$(cat "$fail_root/.collabs/registry.json")"
 before_transcript="$(cat "$fail_root/.collabs/records/2026-04-27-alpha.md")"
-! (cd "$fail_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha ghost --roles-dir "$ROOT/cursor/_roles" >/dev/null 2>&1) || fail "registry helper: join-participants must fail when joined role JSON is missing"
+! (cd "$fail_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha ghost --roles-dir "$ROOT/cursor/_roles" --agent-id gpt-5 >/dev/null 2>&1) || fail "registry helper: join-participants must fail when joined role JSON is missing"
 [[ "$(cat "$fail_root/.collabs/registry.json")" == "$before_registry" ]] || fail "registry helper: join-participants missing-role abort must leave registry unchanged"
 [[ "$(cat "$fail_root/.collabs/records/2026-04-27-alpha.md")" == "$before_transcript" ]] || fail "registry helper: join-participants missing-role abort must leave transcript unchanged"
+
+missing_agent_root="$tmpdir/join-missing-agent"
+cp -R "$join_root" "$missing_agent_root"
+python3 - "$missing_agent_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["participants"] = [
+    {"role": "mod", "agentId": "cursor-composer"},
+    {"role": "tw", "agentId": "claude-sonnet-4-6"},
+]
+entry["turnOrder"] = ["mod", "tw"]
+json.dump(data, open(path, "w"))
+PY
+before_registry="$(cat "$missing_agent_root/.collabs/registry.json")"
+before_transcript="$(cat "$missing_agent_root/.collabs/records/2026-04-27-alpha.md")"
+! (cd "$missing_agent_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" >/dev/null 2>&1) || fail "registry helper: join-participants must reject omitted agent-id"
+[[ "$(cat "$missing_agent_root/.collabs/registry.json")" == "$before_registry" ]] || fail "registry helper: omitted agent-id abort must leave registry unchanged"
+[[ "$(cat "$missing_agent_root/.collabs/records/2026-04-27-alpha.md")" == "$before_transcript" ]] || fail "registry helper: omitted agent-id abort must leave transcript unchanged"
+! (cd "$missing_agent_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id "   " >/dev/null 2>&1) || fail "registry helper: join-participants must reject blank agent-id"
+[[ "$(cat "$missing_agent_root/.collabs/registry.json")" == "$before_registry" ]] || fail "registry helper: blank agent-id abort must leave registry unchanged"
+[[ "$(cat "$missing_agent_root/.collabs/records/2026-04-27-alpha.md")" == "$before_transcript" ]] || fail "registry helper: blank agent-id abort must leave transcript unchanged"
+! (cd "$missing_agent_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id UNKNOWN >/dev/null 2>&1) || fail "registry helper: join-participants must reject non-lowercase unknown token"
+! (cd "$missing_agent_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id unspecified >/dev/null 2>&1) || fail "registry helper: join-participants must reject unspecified as unavailable identity"
+! (cd "$missing_agent_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id n/a >/dev/null 2>&1) || fail "registry helper: join-participants must reject n/a as unavailable identity"
+
+unknown_agent_root="$tmpdir/join-unknown-agent"
+cp -R "$missing_agent_root" "$unknown_agent_root"
+(cd "$unknown_agent_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pe --roles-dir "$ROOT/cursor/_roles" --agent-id unknown >/dev/null)
+python3 - "$unknown_agent_root/.collabs/registry.json" <<'PY' || fail "registry helper: join-participants must persist literal unknown"
+import json
+import sys
+data = json.load(open(sys.argv[1]))
+entry = data["collabs"][0]
+assert entry["participants"][2] == {"role": "pe", "agentId": "unknown"}
+PY
+grep -Fq '| 3 | pe | Platform Engineer | unknown | effectiveness; efficiency; completeness; optimization |' "$unknown_agent_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must render literal unknown in participants table"
 
 missing_table_root="$tmpdir/join-missing-table"
 cp -R "$join_root" "$missing_table_root"
@@ -1016,7 +1802,358 @@ cat >"$missing_table_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
 ## Audit
 MD
 before_registry="$(cat "$missing_table_root/.collabs/registry.json")"
-! (cd "$missing_table_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pa --roles-dir "$ROOT/cursor/_roles" >/dev/null 2>&1) || fail "registry helper: join-participants must fail when participants table is missing"
-[[ "$(cat "$missing_table_root/.collabs/registry.json")" == "$before_registry" ]] || fail "registry helper: missing-table abort must leave registry unchanged"
+(cd "$missing_table_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json join-participants alpha pa --roles-dir "$ROOT/cursor/_roles" --agent-id claude-opus-4-7 >/dev/null)
+[[ "$(cat "$missing_table_root/.collabs/registry.json")" != "$before_registry" ]] || fail "registry helper: managed header migration must persist registry changes"
+grep -Fq '<!-- collab:header-managed -->' "$missing_table_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: join-participants must render managed header when header tables are missing"
+grep -Fq '| 4 | pa | Principal Architect | claude-opus-4-7 | depth; coherence; judgment; risk |' "$missing_table_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: managed header migration must render joined role"
+
+reviewer_wait_root="$tmpdir/reviewer-wait"
+mkdir -p "$reviewer_wait_root/.collabs/records"
+cp "$reviewer_registry" "$reviewer_wait_root/.collabs/registry.json"
+cat >"$reviewer_wait_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Audit
+
+<details>
+<summary>mod</summary>
+one
+</details>
+
+<details>
+<summary>tw</summary>
+two
+</details>
+
+<details>
+<summary>pe</summary>
+three
+</details>
+MD
+reviewer_wait_reject="$({ cd "$reviewer_wait_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha pe; } 2>&1 || true)"
+[[ "$reviewer_wait_reject" == "expected role: pa" ]] || fail "registry helper: non-reviewer must be blocked while convergent phase waits for reviewer"
+cat >>"$reviewer_wait_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+
+<details>
+<summary>pa</summary>
+four
+</details>
+MD
+(cd "$reviewer_wait_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >reviewer-unblock.txt)
+grep -Fxq "Discussion" "$reviewer_wait_root/reviewer-unblock.txt" || fail "registry helper: reviewer contribution must unblock convergent phase lifecycle"
+
+discussion_optional_root="$tmpdir/discussion-optional"
+mkdir -p "$discussion_optional_root/.collabs/records"
+cp "$reviewer_registry" "$discussion_optional_root/.collabs/registry.json"
+python3 - "$discussion_optional_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Discussion"
+entry["turnOrder"] = ["pe"]
+json.dump(data, open(path, "w"))
+PY
+cat >"$discussion_optional_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Discussion
+MD
+(cd "$discussion_optional_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-state alpha pe >state.json)
+python3 - "$discussion_optional_root/state.json" <<'PY' || fail "registry helper: optional reviewer phases must not make reviewer mandatory"
+import json
+import sys
+state = json.load(open(sys.argv[1]))
+assert state["activePhase"] == "Discussion"
+assert state["expectedRole"] == "pe"
+assert state["allowedRoles"] == ["pe"]
+PY
+
+prev_restore_registry="$tmpdir/prev-restore.json"
+cp "$reviewer_registry" "$prev_restore_registry"
+python3 - "$prev_restore_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Conclusion"
+entry["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+python3 "$ROOT/tools/collab/registry.py" --registry "$prev_restore_registry" advance alpha prev >/dev/null
+python3 - "$prev_restore_registry" <<'PY' || fail "registry helper: rollback to moderator-included phase must restore moderator in turnOrder"
+import json
+import sys
+entry = json.load(open(sys.argv[1]))["collabs"][0]
+assert entry["activePhase"] == "Discussion"
+assert entry["turnOrder"] == ["mod", "tw", "pe"]
+PY
+
+prev_restore_root="$tmpdir/prev-restore-root"
+mkdir -p "$prev_restore_root/.collabs/records"
+cp "$reviewer_registry" "$prev_restore_root/.collabs/registry.json"
+python3 - "$prev_restore_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Conclusion"
+entry["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+cat >"$prev_restore_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+**Status**
+
+| Status | Active phase | Turn order | Reviewer |
+|--------|--------------|------------|----------|
+| open | Conclusion | tw, pe | pa |
+
+## Discussion
+
+## Conclusion
+MD
+(cd "$prev_restore_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json advance alpha prev >/dev/null)
+python3 - "$prev_restore_root/.collabs/registry.json" <<'PY' || fail "registry helper: restore must keep registry phase and turnOrder coherent"
+import json
+import sys
+entry = json.load(open(sys.argv[1]))["collabs"][0]
+assert entry["activePhase"] == "Discussion"
+assert entry["turnOrder"] == ["mod", "tw", "pe"]
+PY
+grep -Fq '| open | Discussion | mod, tw, pe | pa |' "$prev_restore_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: restore must render transcript status from registry state"
+
+resummarize_root="$tmpdir/resummarize"
+mkdir -p "$resummarize_root/.collabs/records"
+cp "$registry" "$resummarize_root/.collabs/registry.json"
+cat >"$resummarize_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Completion
+MD
+before_resummarize="$(cat "$resummarize_root/.collabs/records/2026-04-27-alpha.md")"
+! (cd "$resummarize_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json rewrite-summary alpha --summary-file missing.md >/dev/null 2>&1) || fail "registry helper: rewrite-summary must reject missing summary file"
+printf 'new summary\n' >"$resummarize_root/summary.md"
+! (cd "$resummarize_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json rewrite-summary alpha --summary-file summary.md >/dev/null 2>&1) || fail "registry helper: rewrite-summary must reject records with no prior summary"
+[[ "$(cat "$resummarize_root/.collabs/records/2026-04-27-alpha.md")" == "$before_resummarize" ]] || fail "registry helper: rewrite-summary abort must leave transcript unchanged"
+cat >"$resummarize_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Completion
+
+### Summary — 2026-04-27
+
+old summary
+MD
+(cd "$resummarize_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json rewrite-summary alpha --summary-file summary.md --date 2026-04-28 >/dev/null)
+grep -Fq '### Summary — 2026-04-28' "$resummarize_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-summary must update summary heading date"
+grep -Fq 'new summary' "$resummarize_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-summary must replace summary body"
+! grep -Fq 'old summary' "$resummarize_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: rewrite-summary must remove stale summary body"
+[[ "$(grep -c '^### Summary —' "$resummarize_root/.collabs/records/2026-04-27-alpha.md")" == "1" ]] || fail "registry helper: rewrite-summary must not duplicate summary sections"
+printf 'newer summary\n' >"$resummarize_root/summary.md"
+(cd "$resummarize_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json rewrite-summary alpha --summary-file summary.md --date 2026-04-29 >/dev/null)
+grep -Fq 'newer summary' "$resummarize_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: repeated rewrite-summary must replace latest summary body"
+[[ "$(grep -c '^### Summary —' "$resummarize_root/.collabs/records/2026-04-27-alpha.md")" == "1" ]] || fail "registry helper: repeated rewrite-summary must keep a single latest summary"
+
+notice_registry="$tmpdir/notice.json"
+cp "$registry" "$notice_registry"
+python3 - "$notice_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Discussion"
+entry["turnOrder"] = ["mod", "tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+python3 "$ROOT/tools/collab/registry.py" --registry "$notice_registry" advance alpha next >"$tmpdir/manual-compact-notice.txt"
+python3 - "$tmpdir/manual-compact-notice.txt" <<'PY' || fail "registry helper: manual next must emit compact notice for Discussion to Conclusion"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "NEXT: Run /collab speak for role tw."
+assert lines[1] == "EFFICIENCY: Run /compact before next collab command."
+assert lines[2] == "Conclusion"
+assert lines[3] == "NOTICE: Run /compact before continuing to Conclusion."
+PY
+python3 - "$notice_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Discussion"
+entry["turnOrder"] = ["mod", "tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+python3 "$ROOT/tools/collab/registry.py" --registry "$notice_registry" advance alpha next --json >"$tmpdir/manual-compact-notice-json.txt"
+python3 - "$tmpdir/manual-compact-notice-json.txt" <<'PY' || fail "registry helper: manual next --json must emit structured compact notice only when requested"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "NEXT: Run /collab speak for role tw."
+assert lines[1] == "EFFICIENCY: Run /compact before next collab command."
+assert lines[2] == "Conclusion"
+notice = json.loads(lines[3])
+assert notice["notice"] == "compact"
+assert notice["transition"] == "Discussion->Conclusion"
+PY
+python3 - "$notice_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Handoff"
+entry["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+python3 "$ROOT/tools/collab/registry.py" --registry "$notice_registry" advance alpha next >"$tmpdir/manual-subagent-notice.txt"
+python3 - "$tmpdir/manual-subagent-notice.txt" <<'PY' || fail "registry helper: manual next must emit subagent notice for Handoff to Completion"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "NEXT: Run /collab run plan for role tw."
+assert lines[1] == "EFFICIENCY: Run /compact, then prepare or use the assigned subagent work."
+assert lines[2] == "Completion"
+assert lines[3] == "NOTICE: Use a subagent or compacted execution context before /collab run plan."
+PY
+
+handoff_notice_root="$tmpdir/handoff-notice"
+mkdir -p "$handoff_notice_root/.collabs/records"
+cp "$notice_registry" "$handoff_notice_root/.collabs/registry.json"
+python3 - "$handoff_notice_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["activePhase"] = "Handoff"
+entry["turnOrder"] = ["tw", "pe"]
+json.dump(data, open(path, "w"))
+PY
+cat >"$handoff_notice_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+## Handoff
+
+<details>
+<summary>tw</summary>
+one
+</details>
+
+<details>
+<summary>pe</summary>
+two
+</details>
+MD
+(cd "$handoff_notice_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json speak-lifecycle-live alpha >subagent-notice.txt)
+python3 - "$handoff_notice_root/subagent-notice.txt" <<'PY' || fail "registry helper: live lifecycle must emit subagent notice for Handoff to Completion"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+phase_index = lines.index("Completion")
+notice = json.loads(lines[phase_index + 1])
+assert notice["notice"] == "subagent"
+assert notice["transition"] == "Handoff->Completion"
+PY
+
+close_root="$tmpdir/close-root"
+mkdir -p "$close_root/.collabs/records"
+cp "$registry" "$close_root/.collabs/registry.json"
+python3 - "$close_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["status"] = "open"
+entry["activePhase"] = "Discussion"
+entry["turnOrder"] = ["tw", "pe"]
+entry["archived"] = False
+data["activeCollabId"] = entry["id"]
+json.dump(data, open(path, "w"))
+PY
+cat >"$close_root/.collabs/records/2026-04-27-alpha.md" <<'MD'
+# alpha
+
+**Status**
+
+| Status | Active phase | Turn order | Reviewer |
+|--------|--------------|------------|----------|
+| open | Discussion | tw, pe | — |
+
+## Discussion
+MD
+(cd "$close_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json close alpha >close-notice.txt)
+python3 - "$close_root/close-notice.txt" <<'PY' || fail "registry helper: close must emit clear notice"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert "NEXT: Collab closed; run /clear before starting another collab." in lines
+assert "EFFICIENCY: Run /clear before starting another collab." in lines
+assert "2026-04-27-alpha" in lines
+assert "NOTICE: Run /clear before starting another collab." in lines
+PY
+grep -Fq '| closed | Discussion | tw, pe | — |' "$close_root/.collabs/records/2026-04-27-alpha.md" || fail "registry helper: close must render closed status"
+
+cp "$registry" "$close_root/.collabs/registry.json"
+python3 - "$close_root/.collabs/registry.json" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["status"] = "open"
+entry["activePhase"] = "Discussion"
+entry["turnOrder"] = ["tw", "pe"]
+entry["archived"] = False
+data["activeCollabId"] = entry["id"]
+json.dump(data, open(path, "w"))
+PY
+(cd "$close_root" && python3 "$ROOT/tools/collab/registry.py" --registry .collabs/registry.json close alpha --json >close-json-notice.txt)
+python3 - "$close_root/close-json-notice.txt" <<'PY' || fail "registry helper: close --json must emit structured clear notice only when requested"
+import json
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert "NEXT: Collab closed; run /clear before starting another collab." in lines
+assert "EFFICIENCY: Run /clear before starting another collab." in lines
+assert "2026-04-27-alpha" in lines
+notice = json.loads(lines[-1])
+assert notice["notice"] == "clear"
+assert notice["status"] == "closed"
+PY
+
+python3 "$ROOT/tools/collab/registry.py" --registry "$archive_registry" archive alpha >"$tmpdir/archive-notice.txt" || true
+python3 - "$tmpdir/archive-notice.txt" <<'PY' || fail "registry helper: archive must emit clear notice"
+import sys
+lines = open(sys.argv[1]).read().splitlines()
+assert lines[0] == "NEXT: Collab archived; run /clear before starting another collab."
+assert lines[1] == "EFFICIENCY: Run /clear before starting another collab."
+assert lines[2] == "2026-04-27-alpha"
+assert lines[3] == "NOTICE: Run /clear before starting another collab."
+PY
+
+! python3 "$ROOT/tools/collab/registry.py" --registry "$registry" advance alpha sideways >/dev/null 2>&1 || fail "registry helper: invalid advance direction must fail before mutation"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$registry" speak-state missing pe >/dev/null 2>&1 || fail "registry helper: bad collab IDs must fail before mutation"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$registry" speak-state alpha missing >/dev/null 2>&1 || fail "registry helper: invalid speak-state roles must fail before mutation"
+
+closed_advance_registry="$tmpdir/closed-advance.json"
+cp "$registry" "$closed_advance_registry"
+python3 - "$closed_advance_registry" <<'PY'
+import json
+import sys
+path = sys.argv[1]
+data = json.load(open(path))
+entry = data["collabs"][0]
+entry["status"] = "closed"
+entry["activePhase"] = "Discussion"
+json.dump(data, open(path, "w"))
+PY
+before_closed_advance="$(cat "$closed_advance_registry")"
+! python3 "$ROOT/tools/collab/registry.py" --registry "$closed_advance_registry" advance alpha next >/dev/null 2>&1 || fail "registry helper: closed records must not advance"
+[[ "$(cat "$closed_advance_registry")" == "$before_closed_advance" ]] || fail "registry helper: closed advance abort must leave registry unchanged"
 
 echo "PASS: registry helper validates registry-backed collab flows"

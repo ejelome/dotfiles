@@ -1,0 +1,4 @@
+# source	path-invariant	needle
+cursor/_functions/collab/run-plan.md	collab-run-plan-layer1-enforcement	Layer-1 enforcement
+cursor/_functions/collab/speak.md	collab-speak-action-plan-shape	Action Plan checklist shape
+cursor/_tests/_tests.md	test-layer-ownership	`tests/*.test.sh` owns shell-executable CI contract validation

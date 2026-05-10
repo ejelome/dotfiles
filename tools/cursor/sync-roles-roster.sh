@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT/cursor}"
-CONTRACT="${CURSOR_CONFIG_ROOT}/_core/role.md"
+CONTRACT="${CURSOR_CONFIG_ROOT}/_core/agent-role.md"
 BEGIN_MARKER="<!-- BEGIN GENERATED:ROLES_ROSTER -->"
 END_MARKER="<!-- END GENERATED:ROLES_ROSTER -->"
 MODE="write"

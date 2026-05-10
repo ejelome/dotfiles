@@ -20,9 +20,25 @@ Harness files under `~/.cursor/_tests/`:
 - `_mdc.md`
 - `_core.md`
 - `_roles.md`
+- `_generated.md`
 - `_settings.md`
 - `_templates.md`
 - `_tests.md`
+
+## Layer ownership
+
+`tests/*.test.sh` owns shell-executable CI contract validation; `cursor/_tests/*.md` owns agent-facing policy for the `/test` command surface.
+
+Neither layer may be reduced without updating this statement to name the resulting ownership per layer.
+
+**Test removal criteria:** Before any test file under `tests/` is removed, its inventory row must satisfy all of:
+
+- `CONTRACT` names a specific surface (not a category label)
+- `OWNER: central-checker` and the central checker test exercises that same surface
+- `TYPE` ∈ {`structure`, `prose-duplicate`}
+- For golden-file rows additionally: replacement checks land in the same batch, including a stable generate-and-compare check confirming the committed artifact does not drift from generator output
+
+**tw sign-off gate:** `CONTRACT` must name a specific surface for every deletion row before tw approves. Category labels such as "golden file" or "doc contract" are not acceptable `CONTRACT` values.
 
 ## Output
 

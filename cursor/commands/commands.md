@@ -2,7 +2,7 @@
 
 List public slash commands under `~/.cursor/commands/` and their private function routes; use when you need canonical invocation syntax.
 
-Contract: [cursor/_core/command.md](../_core/command.md)
+Contract: [cursor/_core/command-standard.md](../_core/command-standard.md)
 
 ## Trigger
 
@@ -19,39 +19,40 @@ Contract: [cursor/_core/command.md](../_core/command.md)
 
 Public slash files live only as `commands/<namespace>.md`. Private route functions live as `_functions/<namespace>/<route>.md` so Cursor does not expose routes as standalone slashes such as `/assess`.
 
-Invoke routes as `/namespace route ...`; for example, `/docs assess @README.md` loads `commands/docs.md`, resolves `assess`, then executes `_functions/docs/assess.md` with the remaining input and attachments.
+Invoke routes as `/namespace route ...`; for example, `/doc assess @README.md` loads `commands/doc.md`, resolves `assess`, then executes `_functions/doc/assess.md` with the remaining input and attachments.
 
 Operational function playbooks may depend on router rules in `../rules/{auto,shared}.mdc` and private rule files under `../_mdc/{auto,shared}/*.mdc`. `/test` may also require `~/.cursor/_tests/commands.md`, `~/.cursor/_tests/rules.md`, `~/.cursor/_tests/_functions.md`, `~/.cursor/_tests/_mdc.md`, `~/.cursor/_tests/_core.md`, `~/.cursor/_tests/_settings.md`, and `REPOSITORY.md`.
 
 **Invocation notes by command:**
 
-- **`/agent <install | patch>`** — install the multi-agent scaffold (`CLAUDE.md`, `AGENTS.md`, `REPOSITORY.md`) from `~/.cursor/_templates/` into the current repo, or patch `REPOSITORY.md` with repo-specific mutation protocol and ownership rules; `install` aborts if any scaffold file already exists; `patch` aborts if `REPOSITORY.md` is absent or has no `<!-- TODO(agent): ... -->` placeholders.
-- **`/collab <init | join | speak | re-speak | next | prev | set | unset | list | use | open | close | kick | archive | delete | summarize | execute | re-execute | policy>`** — create, join, contribute to, move between phases, rewrite the last contribution or execution record in-place, edit or clear scoped metadata, manage active collabs, reopen/close, manage participants, soft-delete (archive) or permanently delete, summarize, execute or retry assigned action-plan items for a moderated collaboration record, or read the gate policy; moderator-role contributions require human-authored text passed as `<message>` to `/collab speak` after joining with the moderator role.
-- **`/revamp narrative <audit | align | gate> --role <key>`** — staged narrative revamp workflow with a required per-phase role; `align` checks project-local `*.mdc` files against `~/.cursor/rules/`; `gate` reads `validationCommands` from `.revamps/<repo>-<date>.json`.
-- **`/docs readme`** — create or update repo `README*` or `readme*` files.
-- **`/docs manual`** — create or update repo-root `MANUAL.md` from traced automation.
-- **`/docs changelog <atomic | squash>`** — `atomic` or `squash` mode keyword required.
-- **`/docs assess <path>`** — Markdown path or attachment; classify and rewrite.
-- **`/docs compare <path1> <path2>`** — two Markdown paths or attachments; no compact final.
-- **`/docs compact <path>`** — Markdown path or attachment; preserve facts while compacting.
+- **`/agent <install | patch | upgrade>`** — install the multi-agent scaffold (`CLAUDE.md`, `AGENTS.md`, `REPOSITORY.md`) from `~/.cursor/_templates/` into the current repo, patch `REPOSITORY.md` with repo-specific mutation protocol and ownership rules, or upgrade installed scaffold files to the current templates; `install` aborts if any scaffold file already exists (pass `--force` to enter the diff-and-confirm path instead); `patch` aborts if `REPOSITORY.md` is absent or has no `<!-- TODO(agent): ... -->` placeholders; `upgrade` compares installed files against current templates and gates any overwrite.
+- **`/collab <init | join | speak | retract speak | rewrite speak | advance | restore | set | unset | list | activate | open | close | remove participant | archive | delete | write summary | rewrite summary | run plan | rewrite execution | show policy | show flags>`** — create, join, contribute to, retract or rewrite the last contribution, move between phases, rewrite execution records, edit or clear scoped metadata, manage active collabs, reopen/close, manage participants, soft-delete (archive) or permanently delete, write or rewrite summaries, run assigned action-plan items for a moderated collaboration record, read the gate policy, or display the generated flag inventory; moderator-role contributions require human-authored text passed as `<message>` to `/collab speak` after joining with the moderator role.
+  - **Retract.** `/collab retract speak` tombstones the current role's latest active-phase contribution while preserving original text for audit history.
+- **`/narrative rewrite content <audit | align | gate> --role <key>`** — staged narrative rewrite workflow with a required per-phase role; `align` checks project-local `*.mdc` files against `~/.cursor/rules/`; `gate` reads `validationCommands` from `.revamps/<repo>-<date>.json`.
+- **`/doc write readme`** — create or update repo `README*` or `readme*` files.
+- **`/doc write manual`** — create or update repo-root `MANUAL.md` from traced automation.
+- **`/doc write changelog <atomic | squash>`** — `atomic` or `squash` mode keyword required.
+- **`/doc assess <path>`** — Markdown path or attachment; classify and rewrite.
+- **`/doc compare <path1> <path2>`** — two Markdown paths or attachments; no compact final.
+- **`/doc compact <path>`** — Markdown path or attachment; preserve facts while compacting.
 - **`/git commit <atomic | squash <from> <to>>`** — split working tree or squash an inclusive range.
 - **`/git issue <create | implement> <goal>`** — create issue handoff or implement grounded work.
-- **`/eval uid <image> <project>`** — screenshot UI review; attachment counts as `image`.
-- **`/eval wse <project>`** — web stack review.
-- **`/eval igd <project>`** — game engineering review.
-- **`/eval ops <project>`** — build and operations review.
-- **`/eval tune <uid | wse | igd | ops> ...`** — specialist pass plus cross-cutting Criteria audit.
-- **`/eval notes`** — internal route; loaded only by `/eval tune`; do not invoke directly.
+- **`/quality assess interface <image> <project>`** — screenshot UI review; attachment counts as `image`.
+- **`/quality assess web <project>`** — web stack review.
+- **`/quality assess game <project>`** — game engineering review.
+- **`/quality assess operations <project>`** — build and operations review.
+- **`/quality tune <interface | web | game | operations> ...`** — specialist pass plus cross-cutting Criteria audit.
+- **`/quality show notes`** — internal route; loaded only by `/quality tune`; do not invoke directly.
 - **`/test <commands | rules | _functions | _mdc | _core | _settings | repo | all>`** — run one QA harness target or all in sequence.
 
 **Related principal workflows:**
 
 | Route | Source of truth | Cross-stack |
 | --- | --- | --- |
-| `/eval uid` | `image` and `project` both required; attachment counts as `image`; with attachment first token is `project` | Screenshot-only by default. |
-| `/eval wse` | `project` — checked-in web tree | On Phaser repos: non-game aspects such as host, build, shell, BFF, and DOM outside canvas. |
-| `/eval igd` | `project` — game tree | On non-Phaser repos: game slice such as loop, canvas, and assets only. |
-| `/eval ops` | `project` — checked-in build/ops tree | Owns `tools/`, Vite output/path correctness, and CI/deploy mechanics outside WSE/IGD/UID-owned surfaces. |
+| `/quality assess interface` | `image` and `project` both required; attachment counts as `image`; with attachment first token is `project` | Screenshot-only by default. |
+| `/quality assess web` | `project` — checked-in web tree | On Phaser repos: non-game aspects such as host, build, shell, BFF, and DOM outside canvas. |
+| `/quality assess game` | `project` — game tree | On non-Phaser repos: game slice such as loop, canvas, and assets only. |
+| `/quality assess operations` | `project` — checked-in build/ops tree | Owns `tools/`, Vite output/path correctness, and CI/deploy mechanics outside web/game/interface-owned surfaces. |
 
 **Commands catalog:**
 
@@ -61,53 +62,59 @@ _Generated by `tools/cursor/sync-commands-catalog.sh`; do not edit this block by
 | Slash | Signature | Public router | Private functions |
 | --- | --- | --- | --- |
 | `/agent` | `/agent <install \| patch \| upgrade>` | [agent](agent.md) | [install](../_functions/agent/install.md), [patch](../_functions/agent/patch.md), [upgrade](../_functions/agent/upgrade.md) |
-| `/collab` | `/collab <init \| join \| speak \| re-speak \| next \| prev \| set \| unset \| list \| use \| open \| close \| kick \| archive \| delete \| summarize \| execute \| re-execute \| policy>` | [collab](collab.md) | [archive](../_functions/collab/archive.md), [close](../_functions/collab/close.md), [delete](../_functions/collab/delete.md), [execute](../_functions/collab/execute.md), [init](../_functions/collab/init.md), [join](../_functions/collab/join.md), [kick](../_functions/collab/kick.md), [list](../_functions/collab/list.md), [next](../_functions/collab/next.md), [open](../_functions/collab/open.md), [policy](../_functions/collab/policy.md), [prev](../_functions/collab/prev.md), [re-execute](../_functions/collab/re-execute.md), [re-speak](../_functions/collab/re-speak.md), [registry](../_functions/collab/registry.md), [set](../_functions/collab/set.md), [speak](../_functions/collab/speak.md), [summarize](../_functions/collab/summarize.md), [unset](../_functions/collab/unset.md), [use](../_functions/collab/use.md) |
-| `/docs` | `/docs <assess \| changelog \| compact \| compare \| manual \| readme>` | [docs](docs.md) | [assess](../_functions/docs/assess.md), [changelog](../_functions/docs/changelog.md), [compact](../_functions/docs/compact.md), [compare](../_functions/docs/compare.md), [manual](../_functions/docs/manual.md), [readme](../_functions/docs/readme.md) |
-| `/eval` | `/eval <uid \| wse \| igd \| ops \| tune>` | [eval](eval.md) | [igd](../_functions/eval/igd.md), [notes](../_functions/eval/notes.md), [ops](../_functions/eval/ops.md), [tune](../_functions/eval/tune.md), [uid](../_functions/eval/uid.md), [wse](../_functions/eval/wse.md) |
+| `/collab` | `/collab <init \| join \| speak \| retract speak \| rewrite speak \| advance \| restore \| set \| unset \| list \| activate \| open \| close \| remove participant \| archive \| delete \| write summary \| rewrite summary \| run plan \| rewrite execution \| show policy \| show flags>` | [collab](collab.md) | [_invariants](../_functions/collab/_invariants.md), [_phase-commands](../_functions/collab/_phase-commands.md), [_registry](../_functions/collab/_registry.md), [activate](../_functions/collab/activate.md), [advance](../_functions/collab/advance.md), [archive](../_functions/collab/archive.md), [close](../_functions/collab/close.md), [delete](../_functions/collab/delete.md), [init-helper-spec](../_functions/collab/init-helper-spec.md), [init](../_functions/collab/init.md), [join](../_functions/collab/join.md), [list](../_functions/collab/list.md), [open](../_functions/collab/open.md), [remove participant](../_functions/collab/remove-participant.md), [restore](../_functions/collab/restore.md), [retract speak](../_functions/collab/retract-speak.md), [rewrite execution](../_functions/collab/rewrite-execution.md), [rewrite speak](../_functions/collab/rewrite-speak.md), [rewrite summary](../_functions/collab/rewrite-summary.md), [run plan](../_functions/collab/run-plan.md), [set](../_functions/collab/set.md), [show flags](../_functions/collab/show-flags.md), [show policy](../_functions/collab/show-policy.md), [speak](../_functions/collab/speak.md), [unset](../_functions/collab/unset.md), [write summary](../_functions/collab/write-summary.md) |
+| `/doc` | `/doc <assess \| compact \| compare \| write changelog \| write manual \| write readme>` | [doc](doc.md) | [assess](../_functions/doc/assess.md), [compact](../_functions/doc/compact.md), [compare](../_functions/doc/compare.md), [write changelog](../_functions/doc/write-changelog.md), [write manual](../_functions/doc/write-manual.md), [write readme](../_functions/doc/write-readme.md) |
 | `/git` | `/git <commit \| issue>` | [git](git.md) | [commit](../_functions/git/commit.md), [issue](../_functions/git/issue.md) |
-| `/revamp` | `/revamp <narrative>` | [revamp](revamp.md) | [narrative](../_functions/revamp/narrative.md) |
-| `/test` | `/test <commands \| rules \| _functions \| _mdc \| _core \| _roles \| _settings \| repo \| all>` | [test](test.md) | [run](../_functions/test/run.md) |
+| `/narrative` | `/narrative <rewrite content>` | [narrative](narrative.md) | [rewrite content](../_functions/narrative/rewrite-content.md) |
+| `/quality` | `/quality <assess interface \| assess web \| assess game \| assess operations \| tune \| show notes>` | [quality](quality.md) | [assess game](../_functions/quality/assess-game.md), [assess interface](../_functions/quality/assess-interface.md), [assess operations](../_functions/quality/assess-operations.md), [assess web](../_functions/quality/assess-web.md), [show notes](../_functions/quality/show-notes.md), [tune](../_functions/quality/tune.md) |
+| `/test` | `/test <commands \| rules \| _functions \| _mdc \| _core \| _roles \| _settings \| repo \| all>` | [test](test.md) | [test](../_functions/test/run.md) |
 
 | Route | Private function |
 | --- | --- |
 | `/agent install` | [agent/install.md](../_functions/agent/install.md) |
 | `/agent patch` | [agent/patch.md](../_functions/agent/patch.md) |
 | `/agent upgrade` | [agent/upgrade.md](../_functions/agent/upgrade.md) |
+| `(reference only — not an invocable route)` | [collab/_invariants.md](../_functions/collab/_invariants.md) |
+| `(reference only — not an invocable route)` | [collab/_phase-commands.md](../_functions/collab/_phase-commands.md) |
+| `(reference only — not an invocable route)` | [collab/_registry.md](../_functions/collab/_registry.md) |
+| `/collab activate` | [collab/activate.md](../_functions/collab/activate.md) |
+| `/collab advance` | [collab/advance.md](../_functions/collab/advance.md) |
 | `/collab archive` | [collab/archive.md](../_functions/collab/archive.md) |
 | `/collab close` | [collab/close.md](../_functions/collab/close.md) |
 | `/collab delete` | [collab/delete.md](../_functions/collab/delete.md) |
-| `/collab execute` | [collab/execute.md](../_functions/collab/execute.md) |
+| `(reference only — not an invocable route)` | [collab/init-helper-spec.md](../_functions/collab/init-helper-spec.md) |
 | `/collab init` | [collab/init.md](../_functions/collab/init.md) |
 | `/collab join` | [collab/join.md](../_functions/collab/join.md) |
-| `/collab kick` | [collab/kick.md](../_functions/collab/kick.md) |
 | `/collab list` | [collab/list.md](../_functions/collab/list.md) |
-| `/collab next` | [collab/next.md](../_functions/collab/next.md) |
 | `/collab open` | [collab/open.md](../_functions/collab/open.md) |
-| `/collab policy` | [collab/policy.md](../_functions/collab/policy.md) |
-| `/collab prev` | [collab/prev.md](../_functions/collab/prev.md) |
-| `/collab re-execute` | [collab/re-execute.md](../_functions/collab/re-execute.md) |
-| `/collab re-speak` | [collab/re-speak.md](../_functions/collab/re-speak.md) |
-| `/collab registry` | [collab/registry.md](../_functions/collab/registry.md) |
+| `/collab remove participant` | [collab/remove-participant.md](../_functions/collab/remove-participant.md) |
+| `/collab restore` | [collab/restore.md](../_functions/collab/restore.md) |
+| `/collab retract speak` | [collab/retract-speak.md](../_functions/collab/retract-speak.md) |
+| `/collab rewrite execution` | [collab/rewrite-execution.md](../_functions/collab/rewrite-execution.md) |
+| `/collab rewrite speak` | [collab/rewrite-speak.md](../_functions/collab/rewrite-speak.md) |
+| `/collab rewrite summary` | [collab/rewrite-summary.md](../_functions/collab/rewrite-summary.md) |
+| `/collab run plan` | [collab/run-plan.md](../_functions/collab/run-plan.md) |
 | `/collab set` | [collab/set.md](../_functions/collab/set.md) |
+| `/collab show flags` | [collab/show-flags.md](../_functions/collab/show-flags.md) |
+| `/collab show policy` | [collab/show-policy.md](../_functions/collab/show-policy.md) |
 | `/collab speak` | [collab/speak.md](../_functions/collab/speak.md) |
-| `/collab summarize` | [collab/summarize.md](../_functions/collab/summarize.md) |
 | `/collab unset` | [collab/unset.md](../_functions/collab/unset.md) |
-| `/collab use` | [collab/use.md](../_functions/collab/use.md) |
-| `/docs assess` | [docs/assess.md](../_functions/docs/assess.md) |
-| `/docs changelog` | [docs/changelog.md](../_functions/docs/changelog.md) |
-| `/docs compact` | [docs/compact.md](../_functions/docs/compact.md) |
-| `/docs compare` | [docs/compare.md](../_functions/docs/compare.md) |
-| `/docs manual` | [docs/manual.md](../_functions/docs/manual.md) |
-| `/docs readme` | [docs/readme.md](../_functions/docs/readme.md) |
-| `/eval igd` | [eval/igd.md](../_functions/eval/igd.md) |
-| `/eval notes` | [eval/notes.md](../_functions/eval/notes.md) |
-| `/eval ops` | [eval/ops.md](../_functions/eval/ops.md) |
-| `/eval tune` | [eval/tune.md](../_functions/eval/tune.md) |
-| `/eval uid` | [eval/uid.md](../_functions/eval/uid.md) |
-| `/eval wse` | [eval/wse.md](../_functions/eval/wse.md) |
+| `/collab write summary` | [collab/write-summary.md](../_functions/collab/write-summary.md) |
+| `/doc assess` | [doc/assess.md](../_functions/doc/assess.md) |
+| `/doc compact` | [doc/compact.md](../_functions/doc/compact.md) |
+| `/doc compare` | [doc/compare.md](../_functions/doc/compare.md) |
+| `/doc write changelog` | [doc/write-changelog.md](../_functions/doc/write-changelog.md) |
+| `/doc write manual` | [doc/write-manual.md](../_functions/doc/write-manual.md) |
+| `/doc write readme` | [doc/write-readme.md](../_functions/doc/write-readme.md) |
 | `/git commit` | [git/commit.md](../_functions/git/commit.md) |
 | `/git issue` | [git/issue.md](../_functions/git/issue.md) |
-| `/revamp narrative` | [revamp/narrative.md](../_functions/revamp/narrative.md) |
+| `/narrative rewrite content` | [narrative/rewrite-content.md](../_functions/narrative/rewrite-content.md) |
+| `/quality assess game` | [quality/assess-game.md](../_functions/quality/assess-game.md) |
+| `/quality assess interface` | [quality/assess-interface.md](../_functions/quality/assess-interface.md) |
+| `/quality assess operations` | [quality/assess-operations.md](../_functions/quality/assess-operations.md) |
+| `/quality assess web` | [quality/assess-web.md](../_functions/quality/assess-web.md) |
+| `/quality show notes` | [quality/show-notes.md](../_functions/quality/show-notes.md) |
+| `/quality tune` | [quality/tune.md](../_functions/quality/tune.md) |
 | `/test` | [test/run.md](../_functions/test/run.md) |
 <!-- END GENERATED:COMMANDS_ROSTER -->
 

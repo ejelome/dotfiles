@@ -7,8 +7,8 @@ source "$ROOT/tests/helpers/assert.sh"
 
 file="$ROOT/cursor/commands/commands.md"
 
-grep -Fq "Contract: [cursor/_core/command.md](../_core/command.md)" "$file" || fail "commands.md: missing command contract"
-grep -Fq "**\`/docs readme\`**" "$file" || fail "commands.md: missing /docs readme invocation note"
-grep -Fq "| \`/docs readme\` | [docs/readme.md](../_functions/docs/readme.md) |" "$file" || fail "commands.md: missing /docs readme roster entry"
+grep -Fq "Contract: [cursor/_core/command-standard.md](../_core/command-standard.md)" "$file" || fail "commands.md: missing command contract"
+grep -Fq "**\`/doc write readme\`**" "$file" || fail "commands.md: missing /doc write readme invocation note"
+grep -Fq "| \`/doc write readme\` | [doc/write-readme.md](../_functions/doc/write-readme.md) |" "$file" || fail "commands.md: missing /doc write readme roster entry"
 
-echo "PASS: commands.md catalogs the /docs readme route"
+echo "PASS: commands.md catalogs the /doc write readme route"

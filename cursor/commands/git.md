@@ -6,7 +6,8 @@ Route Git and issue workflows through one namespace so source-control commands s
 
 **Slash:** `/git`
 **Signature:** `/git <commit | issue>`
-**Phrases:** git workflow, issue workflow, source control workflow
+**Prose dispatch:** `(git <commit | issue>)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** git workflow, issue workflow, source control workflow
 
 ## Steps
 

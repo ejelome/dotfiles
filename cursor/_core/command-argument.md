@@ -1,0 +1,189 @@
+# Command Argument
+
+Command argument contract for cursor routes. Routes adopt named flags by declaring a `cursor-flag` block, and routes with user-facing mutation gates declare a `cursor-gate` block.
+
+## Flag Parsing Semantics
+
+- **Long-form tokens only.** Flags use the `--name` form. Short aliases (e.g., `-f`) are not recognized.
+- **Exact case-sensitive match.** `--force` and `--Force` are distinct tokens; only the declared form matches.
+- **Flags appear immediately after the route selector and before positional arguments.** A route signature of the form `/agent install --force` places the flag after the command verb and before any positional.
+- **Flag-and-positional interleaving is not supported.** Interleaving flags with positional arguments is not supported. A future route requiring trailing flags must amend this document; the absence of that support is intentional, not an oversight.
+- **Unsupported flags abort before any route mutation.** A route that does not declare a `cursor-flag` block for a given flag must abort with a clear error when that flag is supplied; it must not silently ignore or pass through the flag.
+
+## `cursor-flag` Block Schema
+
+Every route that supports or explicitly rejects a named flag must carry a fenced `cursor-flag` block. The block is machine-readable and validated by `tools/check-cursor-flags.sh`.
+
+**Required fields**
+
+| Field | Allowed values |
+|-------|----------------|
+| `flag` | Flag token (e.g., `force`) |
+| `eligibility` | `eligible` or `ineligible` |
+| `guard-class` | One value from the eligibility or ineligibility table; unknown values fail the lint |
+| `ineligibility-reason` | Required when `eligibility: ineligible`; non-empty prose |
+
+**Composition rules**
+
+- `eligibility: eligible` + a `guard-class` listed in the ineligibility table -> lint error.
+- `eligibility: ineligible` + empty or absent `ineligibility-reason` -> lint error.
+- At most one `cursor-flag` block per `flag` value per route.
+
+**Example — eligible**
+
+````cursor-flag
+flag: force
+eligibility: eligible
+guard-class: hard-abort
+````
+
+**Example — ineligible**
+
+````cursor-flag
+flag: force
+eligibility: ineligible
+guard-class: registry-integrity
+ineligibility-reason: Bypass would create state that other helpers assume cannot exist.
+````
+
+## Force Eligibility Table
+
+| Guard class | Description |
+|-------------|-------------|
+| `hard-abort` | Route aborts unconditionally on conflict; `--force` redirects to the diff-then-gate path. |
+| `gated-overwrite` | Route already presents a destructive gate on conflict; `--force` computes the candidate patch before entering that gate. |
+
+## Force Ineligibility Table
+
+| Guard class | Ineligibility reason | Governing contract |
+|-------------|----------------------|--------------------|
+| `registry-integrity` | Bypass would create state that other helpers assume cannot exist. | `collab/init` steps 8, 12; shared-state invariants |
+| `output-mode-policy` | Guard is a default output-mode choice, not an artifact-conflict guard. | `doc/compact` step 4e |
+| `lifecycle-gate` | Guard enforces phase or completion state, not an overwritable artifact. | Phase gating contracts |
+| `role-gate` | Guard enforces role membership or reviewer presence. | Role and reviewer contracts |
+| `schema-validation` | Guard enforces structural correctness of role JSON or configuration. | `_core/agent-role.md` schema |
+| `unreadable-context` | Guard aborts on unreadable input; there is no artifact to diff. | Route-specific abort steps |
+| `destructive-delete` | Guard covers `delete`, `archive`, `kick`, `purge`, `reset`, `overwrite` verbs. | Command argument destructive verb set |
+
+## Diff-Then-Write Atomicity Invariant
+
+A route adopting a flag with diff-then-write semantics must produce a single patch object. Use the canonical phrase `the candidate patch` to name it. The diff renderer takes `the candidate patch` as its sole input. The post-confirmation write applies `the candidate patch` without recomputation or re-read of source. The phrase `the candidate patch` must appear in both the diff step and the write step of the adopting route.
+
+This invariant closes the TOCTOU window between diff display and write. A route that recomputes the patch after user confirmation provides weaker guarantees than what the gate contract implies.
+
+## Gate Tiers
+
+**Standard** — the operation modifies state that is reversible by an obvious counter-operation the user already knows (for example, `git reset` for commits). Standard gates use `confirm` to proceed and `cancel` to abort.
+
+**Destructive** — the operation modifies state that is not reversible by an obvious counter-operation. Destructive gates use a closed-set action verb plus a required operand to proceed, and `cancel` to abort.
+
+## Gate Interaction
+
+Flag adoption does not change the gate shape or exact-confirmation-token contract.
+
+## Author-Intent Decision Tree
+
+Apply this tree when choosing a gate tier for a new mutation gate:
+
+1. Does the operation modify state outside framework-owned ungated write paths (such as registry-mediated writes performed by `/collab speak`)? If no, no gate. If yes, continue.
+2. Is the modification reversible by an obvious counter-operation the user already knows? If yes, **standard** tier. If no, **destructive** tier.
+
+## Reserved Keyword Vocabulary
+
+Gate tokens are reserved keywords recognized only when a route is in a documented gate state. They are not public commands, do not appear in `commands/`, and are not listed in the command roster.
+
+**Standard tier tokens**
+
+| Purpose | Token |
+|---------|-------|
+| Proceed | `confirm` |
+| Abort | `cancel` |
+
+**Destructive tier tokens**
+
+| Purpose | Token |
+|---------|-------|
+| Proceed | `<verb> <operand>` — verb drawn from the closed set; operand uniquely identifies the artifact |
+| Abort | `cancel` |
+
+**Closed destructive verb set:** `delete`, `archive`, `kick`, `purge`, `reset`, `overwrite`
+
+A new destructive route must map its proceed verb to one of these. If no existing verb fits, extend this list by amending this file — never invent a route-local verb.
+
+## Match Semantics
+
+A gate input matches a token when the input string, after stripping leading and trailing whitespace, equals the token string exactly. Matching is case-sensitive. No regex, no aliases, no shell-completion, no substring matching.
+
+For destructive gates the full `<verb> <operand>` string must match — both verb and operand must be present and correct.
+
+## Token Equivalence
+
+`confirm` == `(confirm)` as syntax sugar; the bare word is canonical. The same equivalence applies to `cancel` and to destructive verb tokens. Both forms satisfy the gate check.
+
+## Gate Declaration Block
+
+Every mutating route must carry a fenced `cursor-gate` block declaring its gate. The block is machine-readable and validated by `tools/check-cursor-gates.sh`.
+
+**Required fields**
+
+| Field | Allowed values |
+|-------|----------------|
+| `gate-class` | `standard` or `destructive` |
+| `proceed` | Exact token the user must type to proceed |
+| `abort` | `cancel` |
+| `operand-format` | `none` for standard; operand description for destructive |
+| `invalid-input` | `re-prompt` |
+| `re-prompt-template` | Exact prompt text re-displayed on invalid input |
+
+**Example — destructive gate**
+
+````cursor-gate
+gate-class: destructive
+proceed: delete <slug>
+abort: cancel
+operand-format: collab registry id
+invalid-input: re-prompt
+re-prompt-template: Type "delete <slug>" to delete this collab, or "cancel" to abort.
+````
+
+**Example — standard gate**
+
+````cursor-gate
+gate-class: standard
+proceed: confirm
+abort: cancel
+operand-format: none
+invalid-input: re-prompt
+re-prompt-template: Type "confirm" to proceed, or "cancel" to abort.
+````
+
+## Re-Prompt Contract
+
+On invalid input or silence, the gate re-displays the `re-prompt-template` verbatim. The gate remains unresolved until the user types a valid proceed or abort token. There is no "later" or "defer" path — the gate resolves to proceed or abort only.
+
+This file defines what the prompt must convey: proceed token, abort token, and artifact identity for destructive gates. The route's gate declaration block carries the exact `re-prompt-template` text.
+
+## Verb Extension Procedure
+
+To add a verb to the closed destructive set:
+
+1. Amend the **Closed destructive verb set** in this file.
+2. Update `tools/check-cursor-gates.sh` to recognize the new verb.
+3. Document the new verb's operand-format convention in this file.
+
+Never add a verb at the route level without amending this file first.
+
+## Negative-Test Category Table
+
+The following categories must each have at least one test before the first flag-adopting batch ships. Test scope is derivable from this table without tracing individual route steps.
+
+| Category | Governing rule |
+|----------|----------------|
+| Flag position | Command argument parse-position constraint |
+| Confirmation token | Command argument exact-token match |
+| Registry-integrity guards | `collab/init` steps 8, 12; shared-state invariant |
+| Lifecycle and role gates | Phase/role gating contracts |
+| Schema and role-JSON validation | Role schema in `_core/agent-role.md` |
+| Unreadable context | Route-specific abort on unreadable inputs |
+| Destructive-delete guards | Command argument destructive verb set |
+| Patch-reference uniqueness | Command argument atomicity invariant; grep confirms no two distinct patch identifiers in the same eligible route |

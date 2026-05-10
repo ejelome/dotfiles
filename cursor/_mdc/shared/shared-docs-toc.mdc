@@ -72,4 +72,4 @@ Example: TOC entry line — `- [Install](#install)` with plain words in the labe
 ## References
 
 - `shared-docs-precedence.mdc` — rule order when TOC guidance conflicts with path playbooks.
-- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style.md), [document-standard](../../_core/document.md), [context-engineering](../../_core/context.md), [author-voice](../../_core/voice.md).
+- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style-guide.md), [document-standard](../../_core/document-standard.md), [context-engineering](../../_core/context-management.md), [author-voice](../../_core/author-voice.md).

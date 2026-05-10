@@ -16,7 +16,7 @@ mkdir -p "$home/.cursor/rules"
 
 printf 'local zshrc\n' >"$home/.zshrc"
 printf 'local gitconfig\n' >"$home/.gitconfig"
-printf 'legacy rules dir\n' >"$home/.cursor/rules/local.txt"
+printf 'old rules dir\n' >"$home/.cursor/rules/local.txt"
 
 HOME="$home" \
 CURSOR_CONFIG_ROOT="$ROOT/cursor" \

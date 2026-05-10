@@ -6,7 +6,7 @@ Deterministic QA for shared role JSON sources projected to `~/.cursor/_roles/`.
 
 1. Load every `*.json` under the tracked source directory `cursor/_roles/`.
 2. Validate the source roster is exact.
-3. Validate each source file is valid JSON and uses the role schema in `cursor/_core/role.md`.
+3. Validate each source file is valid JSON and uses the role schema in `cursor/_core/agent-role.md`.
 4. Validate each filename stem equals its `key`.
 5. Validate keys are globally unique.
 6. Validate runtime mode copies `cursor/_roles/` to `~/.cursor/_roles/`.
