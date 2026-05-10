@@ -5,6 +5,23 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-05-10] - 2026-05-10
+
+### Added
+
+- Mutation gates and effort controls protect shared workflow state.
+- Lifecycle helpers keep phase changes consistent.
+
+### Changed
+
+- Shared rendering and command references use one source of truth.
+- Role routing and terminal layouts follow consistent settings.
+- Documentation states ownership and integrity boundaries.
+
+### Security
+
+- Configuration checks reject incomplete or conflicting workflow data.
+
 ## [2026-05-03] - 2026-05-03
 
 ### Added
@@ -104,7 +121,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.03...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.10...HEAD
+[2026-05-10]: https://github.com/ejelome/dotfiles/compare/v2026.05.03...v2026.05.10
 [2026-05-03]: https://github.com/ejelome/dotfiles/compare/v2026.04.26...v2026.05.03
 [2026-04-26]: https://github.com/ejelome/dotfiles/compare/v2026.04.11...v2026.04.26
 [2026-04-11]: https://github.com/ejelome/dotfiles/compare/v2026.04.05...v2026.04.11

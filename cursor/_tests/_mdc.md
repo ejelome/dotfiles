@@ -23,7 +23,7 @@ Private auto rules under `~/.cursor/_mdc/auto/`:
 
 Private shared rules under `~/.cursor/_mdc/shared/`:
 
-- `shared-cmd-eval.mdc`
+- `shared-cmd-quality.mdc`
 - `shared-cmd-values.mdc`
 - `shared-docs-precedence.mdc`
 - `shared-docs-rules.mdc`

@@ -6,11 +6,12 @@ List the registry-backed collabs so the moderator can inspect status and active 
 
 **Slash:** `/collab list`
 **Signature:** `/collab list [--status <open|closed|archived>]`
-**Phrases:** collab list, list collaborations, list collab records
+**Prose dispatch:** `(collab list ...)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** collab list, list collaborations, list collab records
 
 ## Steps
 
-1. Read `.collabs/registry.json`. If unreadable, **ABORT**: registry unreadable; name the path.
+1. Read [_invariants.md](_invariants.md) before executing; call the relevant helper fresh and do not trust prior reads from conversation context (Invariant #4). Read `.collabs/registry.json`. If unreadable, **ABORT**: registry unreadable; name the path.
 2. Validate the registry structure and active pointer.
 3. Apply the `--status` filter when present: include only collabs whose `status` matches the given value. If the value is not one of `open`, `closed`, or `archived`, **ABORT**: invalid status filter; name the value.
 4. Sort the filtered list: active collab first, then by descending registry insertion order (`#N`), then alphabetically by slug as a tiebreaker.
@@ -30,6 +31,11 @@ List the registry-backed collabs so the moderator can inspect status and active 
          closed · — · 4 participants · 2025-03-10
 ```
 
-- **Numeric selector stability:** The `#N` position is the collab's 1-based insertion index in the registry `collabs` array and never changes after `archive`, `delete`, or reordering. Pass `#N` or the bare number to any collab management command as a shorthand for the slug (e.g., `/collab use 3`).
+- **Numeric selector stability:** The `#N` position is the collab's 1-based insertion index in the registry `collabs` array and never changes after `archive`, `delete`, or reordering. Pass `#N` or the bare number to any collab management command as a shorthand for the slug (e.g., `/collab activate 3`).
 - **Sort order:** Active collab always first. Among the rest: highest `#N` first (newest to oldest), then slug alphabetically as a tiebreaker when `#N` values are equal (not normally possible but stated for completeness).
 - **Registry boundary:** `/collab list` is read-only. It never creates, edits, archives, or selects a collab.
+
+```cursor-arg
+dispatch: (collab list [--status <open|closed|archived>])
+param: name=--status; required=optional; placeholder=<open|closed|archived>; class=literal; values=open | closed | archived
+```

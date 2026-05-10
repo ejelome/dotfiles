@@ -116,4 +116,4 @@ Example: compliant subject — `fix(client): handle empty cart state`.
 
 - `auto-context-gate.mdc` — abort when commit or plan output needs unread dependencies.
 - `shared-docs-rules.mdc` — `.mdc` hygiene for this file.
-- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style.md), [document-standard](../../_core/document.md), [context-engineering](../../_core/context.md), [author-voice](../../_core/voice.md).
+- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style-guide.md), [document-standard](../../_core/document-standard.md), [context-engineering](../../_core/context-management.md), [author-voice](../../_core/author-voice.md).

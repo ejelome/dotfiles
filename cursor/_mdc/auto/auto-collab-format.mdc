@@ -30,5 +30,5 @@ Example: A moderator message with several related points may become bullets or s
 
 ## References
 
-- [style-guide](../../_core/style.md) — imperative instruction shape and LLM-consumed `.mdc` constraints.
-- [document-standard](../../_core/document.md) — rule template and front matter.
+- [style-guide](../../_core/style-guide.md) — imperative instruction shape and LLM-consumed `.mdc` constraints.
+- [document-standard](../../_core/document-standard.md) — rule template and front matter.

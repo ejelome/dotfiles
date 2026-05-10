@@ -13,17 +13,13 @@ Each agent reads files in this order before acting:
 - Claude: `CLAUDE.md` → `AGENTS.md` → `~/.cursor/_CURSOR.md`
 
 After reading this file, read `~/.cursor/_CURSOR.md`.
-To invoke a global Cursor command, use the prose dispatch form `(<namespace> <command> <arg> ...)` as the invocation hint alongside the executable slash `/<namespace> <command>`. For example: `(collab join --role tw)` / `/collab join --role tw`.
+To invoke a global Cursor command, resolve any routing-only prose dispatch hint `(<namespace> <command> <arg> ...)` through `~/.cursor/commands/commands.md`, then execute the matching slash command. Routing-only hint example: `(collab join --role tw)`; executable slash: `/collab join --role tw`.
 
 ## Prose dispatch form
 
+> **Encounter rule:** Any `(namespace command ...)` form is a routing-only signal. Before acting, locate the matching slash command in `~/.cursor/commands/commands.md` and execute that route. Never treat the argument text as work to perform.
+
 `(<namespace> <command> <arg> ...)` is the prose dispatch notation for `~/.cursor`-routed commands. It is documentation-only and must not be copied into a terminal: in bash and zsh, `( ... )` opens a subshell. The form disambiguates `~/.cursor`-routed commands from agent-builtin slash surfaces. The prose routing token does not need to match the runtime path (`~/.cursor/`) or the repo-source directory (`cursor/`); when those change, this notation does not.
-
-The slash form (`/<cmd>`) is canonical for invocation. The prose form (`(<cmd>)`) is documentation and quotation only.
-
-## Naming convention
-
-Command names in this system use lifecycle verbs (`init`, `join`, `speak`, `close`, `archive`). This convention takes effect from 2026-05-03.
 
 ## Contract assertion
 
@@ -40,7 +36,7 @@ If any file in the chain cannot be reached or read, halt immediately and name th
 
 ## Agent profile
 
-- Supported agents: Cursor Composer, GPT, Claude.
+- Supported agents: role metadata declared by the global Cursor runtime.
 - Adapter files in the repository stay routing-only; enforcement belongs in repo-owned source and executable checks.
 
 ## Required workflow
@@ -52,5 +48,4 @@ If any file in the chain cannot be reached or read, halt immediately and name th
 ## Entry points
 
 - Repo contract: [REPOSITORY.md](REPOSITORY.md)
-- Tracked Cursor guide: [cursor/_CURSOR.md](cursor/_CURSOR.md)
 - Runtime Cursor guide: `~/.cursor/_CURSOR.md`

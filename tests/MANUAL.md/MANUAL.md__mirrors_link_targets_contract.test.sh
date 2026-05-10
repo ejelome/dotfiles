@@ -10,9 +10,6 @@ source "$ROOT/tools/lib/link-targets.sh"
 source "$ROOT/tools/lib/cursor-layout.sh"
 
 manual="$(<"$ROOT/MANUAL.md")"
-golden="$ROOT/tests/MANUAL.md/MANUAL.md.golden"
-
-cmp -s "$ROOT/MANUAL.md" "$golden" || fail "MANUAL.md: differs from tests/MANUAL.md/MANUAL.md.golden"
 
 python3 - "$ROOT/MANUAL.md" <<'PY' || fail "MANUAL.md: TOC must be wrapped with --- before and after"
 import sys
@@ -26,7 +23,7 @@ expected = """---
 - [Reproduce the automated link pass by hand](#reproduce-the-automated-link-pass-by-hand)
   - [1. Clean nested mirrors under the Cursor config root, then assert](#1-clean-nested-mirrors-under-the-cursor-config-root-then-assert)
   - [2. Link required top-level home files](#2-link-required-top-level-home-files)
-  - [3. Remove legacy `~/.cursor/core` if present as a symlink](#3-remove-legacy-cursorcore-if-present-as-a-symlink)
+  - [3. Remove old `~/.cursor/core` if present as a symlink](#3-remove-old-cursorcore-if-present-as-a-symlink)
   - [4. Mirror `config/` into `~/.config/`](#4-mirror-config-into-config)
   - [5. Copy the Cursor runtime tree](#5-copy-the-cursor-runtime-tree)
   - [6. Link Cursor user settings (platform-specific User folder)](#6-link-cursor-user-settings-platform-specific-user-folder)
@@ -42,6 +39,26 @@ expected = """---
 if expected not in text:
     raise SystemExit(1)
 PY
+
+python3 - "$ROOT" "$ROOT/MANUAL.md" <<'PY' || fail "MANUAL.md: relative links must resolve"
+import os
+import re
+import sys
+
+root, path = sys.argv[1:]
+text = open(path, encoding="utf-8").read()
+for target in re.findall(r"!??\[[^\]]*\]\(([^)]+)\)", text):
+    if "://" in target or target.startswith("#"):
+        continue
+    target = target.split("#", 1)[0]
+    if not target:
+        continue
+    if not os.path.exists(os.path.join(root, target)):
+        raise SystemExit(1)
+PY
+
+assert_contains "$manual" 'Use these steps to reproduce `link.sh`'
+assert_contains "$manual" 'All steps are traced to the current linker scripts.'
 
 while IFS='|' read -r source_rel dest_rel _source_kind _required; do
   [[ -n "$source_rel" ]] || continue

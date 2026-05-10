@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Clear local chat/session history for Cursor, Codex CLI, and Claude Code CLI.
-# Defaults to Cursor-only cleanup for backward compatibility.
+# Defaults to Cursor-only cleanup when no product is specified.
 #
 # Usage:
 #   ./tools/cursor-cli/clear-chat.sh [--cursor] [--codex] [--claude]
@@ -160,7 +160,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-# Backward-compatible default.
+# Default product selection.
 if [[ $args_provided -eq 0 ]]; then
   do_cursor=1
 fi

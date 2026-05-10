@@ -6,13 +6,16 @@ Deterministic QA for public slash routers in `~/.cursor/commands/*.md`.
 
 1. Load every `*.md` under `~/.cursor/commands/`.
 2. Validate each file has exactly one `#` title, and exactly one `## Trigger`, `## Steps`, and `## Notes` in that order.
-3. Validate P9: every public command file except `commands.md` contains `**Slash:**`.
-4. Validate each file is <= 250 lines.
-5. Validate public routers (`revamp.md`, `docs.md`, `git.md`, `eval.md`, `test.md`) resolve routes to grouped function paths.
-6. Validate catalog integrity: `commands.md` links every public command file.
-7. Validate catalog integrity: the generated roster block in `commands.md` matches filesystem state (`tools/cursor/sync-commands-catalog.sh --check`).
-8. Validate command links stay inside `commands/`, `_functions/`, `rules/`, `_mdc/`, and `_tests/`.
-9. Validate dependencies align with rule routers (`rules/auto.mdc`, `rules/shared.mdc`) and private rule bodies (`_mdc/auto/*.mdc`, `_mdc/shared/*.mdc`).
+3. Validate P9: every public command and private function file except `commands.md` declares exactly one `**Slash:**`, `**Prose dispatch:**`, and `**Search phrases:**` line in that order.
+4. Validate trigger boundaries: invocable slash/prose forms do not appear under `Search phrases`, search phrases do not replace slash/prose entries, and legacy `**Phrases:**` blocks fail.
+5. Validate phrase-to-route exactness for invocable entries only: no slash or prose-dispatch value appears in more than one command/function route file, except the documented `/test` router and `_functions/test/run.md` implementation mirror. `Search phrases` may repeat because they are non-invocable discovery aids.
+6. Validate quote shape for declared invocation forms: single-quoted wrappers fail with `invalid quote: single quotes are not a valid wrapper; use double quotes`.
+7. Validate each file is <= 250 lines.
+8. Validate public routers (`narrative.md`, `doc.md`, `git.md`, `quality.md`, `test.md`) resolve routes to grouped function paths.
+9. Validate catalog integrity: `commands.md` links every public command file.
+10. Validate catalog integrity: the generated roster block in `commands.md` matches filesystem state (`tools/cursor/sync-commands-catalog.sh --check`).
+11. Validate command links stay inside `commands/`, `_functions/`, `rules/`, `_mdc/`, and `_tests/`.
+12. Validate dependencies align with rule routers (`rules/auto.mdc`, `rules/shared.mdc`) and private rule bodies (`_mdc/auto/*.mdc`, `_mdc/shared/*.mdc`).
 
 ## Required roster
 
@@ -21,10 +24,10 @@ Public command files under `~/.cursor/commands/`:
 - `agent.md`
 - `commands.md`
 - `collab.md`
-- `docs.md`
-- `eval.md`
+- `doc.md`
+- `quality.md`
 - `git.md`
-- `revamp.md`
+- `narrative.md`
 - `test.md`
 
 ## Output

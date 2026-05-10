@@ -28,9 +28,9 @@ From highest to lowest priority:
    - The weekly-structure rule defines weekly-entry layout constraints for those paths.
 2. **Devblog (general contract)** for `**/devblog/**/*.md`
    - Broader narrative, voice, and link constraints for devblog paths when row 1 does not decide the conflict.
-3. **Lean playbook** for contract files under `docs/playbook/`
+3. **Lean playbook** for contract files under `doc/playbook/`
    - Any loaded rule whose `globs` cover those paths applies.
-   - For `**/docs/playbook/NOW.md`, section-specific constraints stack with the lean gate for that section.
+   - For `**/doc/playbook/NOW.md`, section-specific constraints stack with the lean gate for that section.
 4. **Invocation-gated workflow directives**
    - Apply only while the active workflow invocation is in scope.
    - Apply only to the output that invocation governs.
@@ -63,4 +63,4 @@ Example: A task touches `**/README*` and general `**/*.md` without a higher path
 - `auto-context-gate.mdc` — hard-stop precedence for unread dependencies.
 - `auto-docs-markdown.mdc` — default markdown stack when no higher row applies.
 - `shared-docs-rules.mdc` — metadata and trigger consistency for rules.
-- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style.md), [document-standard](../../_core/document.md), [context-engineering](../../_core/context.md), [author-voice](../../_core/voice.md).
+- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style-guide.md), [document-standard](../../_core/document-standard.md), [context-engineering](../../_core/context-management.md), [author-voice](../../_core/author-voice.md).

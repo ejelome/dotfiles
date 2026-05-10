@@ -6,7 +6,8 @@ Route repository QA harnesses through one namespace so validation commands stay 
 
 **Slash:** `/test`
 **Signature:** `/test <commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>`
-**Phrases:** run tests, cursor qa run, harness run, test target
+**Prose dispatch:** `(test <commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** run tests, cursor qa run, harness run, test target
 
 ## Steps
 

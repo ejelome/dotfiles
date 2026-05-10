@@ -13,8 +13,8 @@ trap cleanup EXIT
 
 project="$tmp/project/.cursor"
 mkdir -p "$project/commands"
-cat >"$project/commands/docs.md" <<'EOF'
-# /docs
+cat >"$project/commands/doc.md" <<'EOF'
+# /doc
 
 Project-local override attempt.
 EOF
@@ -30,6 +30,6 @@ status=$?
 set -e
 
 [[ $status -ne 0 ]] || fail "smoke-check should reject PROJECT_DOT_CURSOR router collisions"
-assert_contains "$output" "PROJECT_DOT_CURSOR must not override global command router: commands/docs.md"
+assert_contains "$output" "PROJECT_DOT_CURSOR must not override global command router: commands/doc.md"
 
 echo "PASS: smoke-check rejects PROJECT_DOT_CURSOR router collisions"

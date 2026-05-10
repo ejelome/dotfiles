@@ -16,7 +16,7 @@ mkdir -p "$project/rules"
 cat >"$project/rules/local.mdc" <<'EOF'
 # Project rule
 
-Do not depend on [_core](../_core/style.md) from an app-local rule.
+Do not depend on [_core](../_core/style-guide.md) from an app-local rule.
 EOF
 
 set +e

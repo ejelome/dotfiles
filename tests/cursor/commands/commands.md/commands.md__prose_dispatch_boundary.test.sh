@@ -43,7 +43,7 @@ grep -Fq '**Slash:** `/agent install`' "$ROOT/cursor/_functions/agent/install.md
 grep -Fq '**Signature:** `/collab <' "$ROOT/cursor/commands/collab.md" || fail "collab router signature changed"
 grep -Fq '**Signature:** `/agent <' "$ROOT/cursor/commands/agent.md" || fail "agent router signature changed"
 
-dispatch_refs="$(grep -R -n -E -o '`\((agent|collab|docs|eval|git|revamp|test) [^`]*\)`' "${targets[@]}" || true)"
+dispatch_refs="$(grep -R -n -E -o '`\((agent|collab|doc|quality|git|narrative|test) [^`]*\)`' "${targets[@]}" || true)"
 [[ -n "$dispatch_refs" ]] || fail "missing concrete parenthesized prose dispatch examples"
 
 while IFS= read -r ref; do

@@ -4,8 +4,11 @@
 # Includes adapter-sync checks and Cursor markdown semantics checks.
 #
 # Shellcheck (when installed) runs on bash entrypoints: link.sh, this script,
-# tools/check-agent-adapters.sh, tools/check-cursor-content.sh,
-# tools/cursor/sync-commands-catalog.sh, tools/cursor/sync-roles-roster.sh,
+# tools/check-agent-adapters.sh, tools/check-cursor-roles.sh, tools/check-cursor-content.sh,
+# tools/check-cursor-gates.sh, tools/check-cursor-flags.sh, tools/check-cursor-naming.py,
+# tools/check-collab-floor-rules.py,
+# tools/cursor/command-reference.py, tools/cursor/sync-commands-catalog.sh, tools/cursor/sync-framework-boundaries.sh,
+# tools/cursor/sync-roles-roster.sh,
 # tools/manual/manual-link-fallback.sh,
 # tools/cursor-cli/clear-chat.sh, tools/cursor-cli/factory-reset.sh.
 # Markdownlint (when installed) uses repo-root .markdownlint.json.
@@ -127,7 +130,7 @@ validate_project_dot_cursor() {
 
   [[ -d "$project" ]] || die "PROJECT_DOT_CURSOR directory does not exist: $project"
   [[ ! -e "$project/_core" ]] || die "PROJECT_DOT_CURSOR must not contain _core/ ($project/_core)"
-  [[ ! -e "$project/core" ]] || die "PROJECT_DOT_CURSOR must not contain legacy core/ ($project/core)"
+  [[ ! -e "$project/core" ]] || die "PROJECT_DOT_CURSOR must not contain old core/ ($project/core)"
 
   echo "smoke-check: project .cursor guard ($project) …"
   bad_file=""
@@ -195,10 +198,15 @@ echo "smoke-check: bash -n …"
 bash -n "${ROOT}/link.sh"
 bash -n "${ROOT}/tools/smoke-check.sh"
 bash -n "${ROOT}/tools/check-agent-adapters.sh"
+bash -n "${ROOT}/tools/check-cursor-roles.sh"
 bash -n "${ROOT}/tools/check-cursor-content.sh"
+bash -n "${ROOT}/tools/check-cursor-gates.sh"
+bash -n "${ROOT}/tools/check-cursor-flags.sh"
 bash -n "${ROOT}/tools/cursor/sync-commands-catalog.sh"
+bash -n "${ROOT}/tools/cursor/sync-framework-boundaries.sh"
 bash -n "${ROOT}/tools/cursor/sync-roles-roster.sh"
 bash -n "${ROOT}/tools/manual/manual-link-fallback.sh"
+bash -n "${ROOT}/tools/cursor-cli/dcc"
 bash -n "${ROOT}/tools/cursor-cli/clear-chat.sh"
 bash -n "${ROOT}/tools/cursor-cli/factory-reset.sh"
 bash -n "${ROOT}/tools/zsh/install-plugins.sh"
@@ -216,9 +224,13 @@ zsh -n "${ROOT}/zshrc"
 
 echo "smoke-check: python …"
 python3 -m py_compile "${ROOT}/launcher/lib/dock_update.py"
+python3 -m py_compile "${ROOT}/tools/cursor/command-reference.py"
 python3 -m py_compile "${ROOT}/tools/cursor/roles.py"
 python3 -m py_compile "${ROOT}/tools/collab/registry.py"
-python3 -m py_compile "${ROOT}/tools/revamp/state.py"
+python3 -m py_compile "${ROOT}/tools/collab/lifecycle-doc.py"
+python3 -m py_compile "${ROOT}/tools/check-collab-floor-rules.py"
+python3 -m py_compile "${ROOT}/tools/check-cursor-naming.py"
+python3 -m py_compile "${ROOT}/tools/narrative/state.py"
 
 echo "smoke-check: gitconfig …"
 git config --file "${ROOT}/gitconfig" --list >/dev/null
@@ -321,8 +333,14 @@ done
 echo "smoke-check: command catalog sync …"
 CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-commands-catalog.sh" --check
 
+echo "smoke-check: framework boundaries sync …"
+CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-framework-boundaries.sh" --check
+
 echo "smoke-check: role roster sync …"
 CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-roles-roster.sh" --check
+
+echo "smoke-check: role catalog …"
+"$ROOT/tools/check-cursor-roles.sh" --roles-dir "$CURSOR_CONFIG_ROOT/_roles"
 
 echo "smoke-check: adapter sync …"
 "$ROOT/tools/check-agent-adapters.sh"
@@ -330,24 +348,54 @@ echo "smoke-check: adapter sync …"
 echo "smoke-check: cursor content …"
 CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-content.sh"
 
+echo "smoke-check: cursor gates …"
+CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-gates.sh"
+
+echo "smoke-check: cursor flags …"
+CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-flags.sh"
+
+echo "smoke-check: cursor naming …"
+"$ROOT/tools/check-cursor-naming.py" --root "$ROOT"
+
+echo "smoke-check: collab floor rules …"
+"$ROOT/tools/check-collab-floor-rules.py" --root "$ROOT"
+
+echo "smoke-check: generated collab lifecycle …"
+"$ROOT/tools/collab/lifecycle-doc.py" --check
+
+echo "smoke-check: generated command reference …"
+"$ROOT/tools/cursor/command-reference.py" --check
+
 validate_project_dot_cursor
 validate_runtime_projection
 
 [[ -x "${ROOT}/link.sh" ]] || die "link.sh must be executable"
 [[ -x "${ROOT}/tools/smoke-check.sh" ]] || die "tools/smoke-check.sh must be executable"
 [[ -x "${ROOT}/tools/check-agent-adapters.sh" ]] || die "tools/check-agent-adapters.sh must be executable"
+[[ -x "${ROOT}/tools/check-cursor-roles.sh" ]] || die "tools/check-cursor-roles.sh must be executable"
 [[ -x "${ROOT}/tools/check-cursor-content.sh" ]] || die "tools/check-cursor-content.sh must be executable"
+[[ -x "${ROOT}/tools/check-cursor-gates.sh" ]] || die "tools/check-cursor-gates.sh must be executable"
+[[ -x "${ROOT}/tools/check-cursor-flags.sh" ]] || die "tools/check-cursor-flags.sh must be executable"
+[[ -x "${ROOT}/tools/check-cursor-naming.py" ]] || die "tools/check-cursor-naming.py must be executable"
+[[ -x "${ROOT}/tools/check-collab-floor-rules.py" ]] || die "tools/check-collab-floor-rules.py must be executable"
+[[ -x "${ROOT}/tools/collab/lifecycle-doc.py" ]] || die "tools/collab/lifecycle-doc.py must be executable"
+[[ -x "${ROOT}/tools/cursor/command-reference.py" ]] || die "tools/cursor/command-reference.py must be executable"
 [[ -x "${ROOT}/tools/cursor/sync-commands-catalog.sh" ]] || die "tools/cursor/sync-commands-catalog.sh must be executable"
+[[ -x "${ROOT}/tools/cursor/sync-framework-boundaries.sh" ]] || die "tools/cursor/sync-framework-boundaries.sh must be executable"
 [[ -x "${ROOT}/tools/cursor/sync-roles-roster.sh" ]] || die "tools/cursor/sync-roles-roster.sh must be executable"
 [[ -x "${ROOT}/tools/manual/manual-link-fallback.sh" ]] || die "tools/manual/manual-link-fallback.sh must be executable"
+[[ -x "${ROOT}/tools/cursor-cli/dcc" ]] || die "tools/cursor-cli/dcc must be executable"
 [[ -x "${ROOT}/launcher/setup-cursor-workspace-launcher.sh" ]] || die "launcher setup must be executable"
 
 if command -v shellcheck >/dev/null 2>&1; then
   echo "smoke-check: shellcheck …"
   shellcheck -x "${ROOT}/link.sh" "${ROOT}/tools/smoke-check.sh" \
-    "${ROOT}/tools/check-agent-adapters.sh" "${ROOT}/tools/check-cursor-content.sh" \
-    "${ROOT}/tools/cursor/sync-commands-catalog.sh" "${ROOT}/tools/cursor/sync-roles-roster.sh" \
+    "${ROOT}/tools/check-agent-adapters.sh" "${ROOT}/tools/check-cursor-roles.sh" "${ROOT}/tools/check-cursor-content.sh" \
+    "${ROOT}/tools/check-cursor-gates.sh" "${ROOT}/tools/check-cursor-flags.sh" \
+    "${ROOT}/tools/cursor/sync-commands-catalog.sh" "${ROOT}/tools/cursor/sync-framework-boundaries.sh" \
+    "${ROOT}/tools/cursor/sync-roles-roster.sh" \
     "${ROOT}/tools/manual/manual-link-fallback.sh" \
+    "${ROOT}/tools/cursor-cli/dcc" \
     "${ROOT}/tools/cursor-cli/clear-chat.sh" "${ROOT}/tools/cursor-cli/factory-reset.sh"
 else
   echo "smoke-check: [warn] shellcheck not in PATH; skipping." >&2

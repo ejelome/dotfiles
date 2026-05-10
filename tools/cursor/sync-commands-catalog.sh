@@ -26,6 +26,16 @@ escape_table_cell() {
   sed 's/|/\\|/g'
 }
 
+function_slash() {
+  local function_file="$1" slash
+  slash="$(sed -n 's/^\*\*Slash:\*\* //p' "$function_file" | head -n 1)"
+  if [[ "$slash" == \`*\` ]]; then
+    slash="${slash#\`}"
+    slash="${slash%\`}"
+  fi
+  printf '%s' "$slash"
+}
+
 assert_markers() {
   local begin_count end_count
   begin_count="$(grep -Fc "$BEGIN_MARKER" "$CATALOG" || true)"
@@ -80,7 +90,14 @@ generate_block() {
       function_links=""
       for function_file in "${namespace_functions[@]}"; do
         function_rel="${function_file#"${CURSOR_CONFIG_ROOT}/_functions/"}"
-        route="$(basename "$function_file" .md)"
+        route="$(function_slash "$function_file")"
+        if [[ -n "$route" && "$route" == "/${ns} "* ]]; then
+          route="${route#"/${ns} "}"
+        elif [[ -n "$route" && "$route" == "/${ns}" ]]; then
+          route="${ns}"
+        else
+          route="$(basename "$function_file" .md)"
+        fi
         function_link="[${route}](../_functions/${function_rel})"
         if [[ -n "$function_links" ]]; then
           function_links="${function_links}, "
@@ -100,9 +117,12 @@ generate_block() {
     function_rel="${function_file#"${CURSOR_CONFIG_ROOT}/_functions/"}"
     ns="$(dirname "$function_rel")"
     route="$(basename "$function_file" .md)"
-    slash_route="/${ns} ${route}"
-    if [[ "$ns" == "test" && "$route" == "run" ]]; then
-      slash_route="/test"
+    slash_route="$(function_slash "$function_file")"
+    if [[ -z "$slash_route" ]]; then
+      slash_route="/${ns} ${route}"
+      if [[ "$ns" == "test" && "$route" == "run" ]]; then
+        slash_route="/test"
+      fi
     fi
     function_link="[${function_rel}](../_functions/${function_rel})"
     function_cell="$(printf '%s' "$slash_route" | escape_table_cell)"

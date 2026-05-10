@@ -30,6 +30,8 @@ grep -Fq 'Validate scaffold-local install state' "$install_file" || fail "instal
 grep -Fq 'CLAUDE.md` routes to `AGENTS.md' "$install_file" || fail "install.md: missing CLAUDE -> AGENTS validation"
 grep -Fq '`AGENTS.md` references `~/.cursor/_CURSOR.md`' "$install_file" || fail "install.md: missing AGENTS runtime reference validation"
 grep -Fq 'the `AGENTS.md` prose dispatch sentence' "$install_file" || fail "install.md: missing prose dispatch validation"
+grep -Fq 'every Markdown link in the installed `AGENTS.md` whose target does not begin with `~` or `http` resolves as a file path relative to the repo root' "$install_file" || fail "install.md: missing consumer-root Markdown link validation"
+grep -Fq '**ABORT** naming the unresolvable path' "$install_file" || fail "install.md: missing unresolvable Markdown link abort"
 grep -Fq '/agent patch' "$install_file" || fail "install.md: missing next-step reference to patch"
 if grep -Fq 'Emit one notice per agent that may inject itself into git commits, naming the agent and the setting used to disable commit injection.' "$install_file"; then
   fail "install.md: removed commit-injection notice step must stay absent"
@@ -41,6 +43,9 @@ grep -Fq '<!-- TODO(agent):' "$patch_file" || fail "patch.md: missing placeholde
 grep -Fq 'Validate scaffold-local patch state' "$patch_file" || fail "patch.md: missing scaffold-local validation step"
 grep -Fq 'Idempotency' "$patch_file" || fail "patch.md: missing idempotency note"
 grep -Fq '/agent install' "$patch_file" || fail "patch.md: missing reference to install prerequisite"
+grep -Fq 'For validation commands, only include a command path when that exact path exists in the target repo' "$patch_file" || fail "patch.md: missing target-repo validation command discovery rule"
+grep -Fq 'do not copy validation commands from any other repository' "$patch_file" || fail "patch.md: missing cross-repo validation command ban"
+grep -Fq '<!-- TODO(agent): list repo-specific validation commands -->' "$patch_file" || fail "patch.md: missing bounded validation-command TODO fallback"
 grep -Eiq '\binfer\b' "$patch_file" || fail "patch.md: missing infer-before-confirm wording"
 grep -Eiq '\bdisplay\b' "$patch_file" || fail "patch.md: missing display-before-confirm wording"
 grep -Eiq '\bconfirm\b' "$patch_file" || fail "patch.md: missing confirm-before-write wording"

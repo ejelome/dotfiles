@@ -6,11 +6,12 @@ Reopen a closed collaboration record in the registry when additional discussion 
 
 **Slash:** `/collab open`
 **Signature:** `/collab open`
-**Phrases:** collab open, reopen collab, reopen collaboration record
+**Prose dispatch:** `(collab open)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** collab open, reopen collab, reopen collaboration record
 
 ## Steps
 
-1. Resolve the target collab with **Registry targeting** in **Notes**.
+1. Read [_invariants.md](_invariants.md) before executing; call the relevant helper fresh and do not trust prior reads from conversation context (Invariant #4). Resolve the target collab with **Registry targeting** in **Notes**.
 2. Read `.collabs/registry.json` and the resolved transcript path. If either is unreadable, **ABORT**: record unreadable; name the path.
 3. If the registry status is `open`, report that the record is already open and stop.
 4. If the collab is archived, **ABORT**: archived records must be restored before reopening.

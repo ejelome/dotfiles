@@ -49,4 +49,4 @@ Example: instead of listing accepted role values as "`mod`, `tw`, `pe`, `pa`" in
 
 - `cursor/_roles/*.json` — canonical source for role key values and role metadata.
 - [shared-docs-rules](shared-docs-rules.mdc) — `.mdc` file hygiene and naming convention.
-- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style.md), [document-standard](../../_core/document.md).
+- Authoring canon (`~/.cursor/_core/`): [style-guide](../../_core/style-guide.md), [document-standard](../../_core/document-standard.md).

@@ -6,7 +6,8 @@ Run QA harnesses by target so maintainers can execute canonical test checklists 
 
 **Slash:** `/test`
 **Signature:** `/test <commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>`
-**Phrases:** `run tests`, `cursor qa run`, `harness run`, `test target`
+**Prose dispatch:** `(test <commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>)` — for non-Cursor agents; not terminal-executable in Cursor.
+**Search phrases:** `run tests`, `cursor qa run`, `harness run`, `test target`
 
 ## Steps
 
@@ -31,3 +32,8 @@ Run QA harnesses by target so maintainers can execute canonical test checklists 
 - **Parameters:** `<commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>` — required QA target selector.
 - **Required authorities:** `~/.cursor/_tests/commands.md`, `~/.cursor/_tests/rules.md`, `~/.cursor/_tests/_functions.md`, `~/.cursor/_tests/_mdc.md`, `~/.cursor/_tests/_core.md`, `~/.cursor/_tests/_roles.md`, `~/.cursor/_tests/_settings.md`, and `REPOSITORY.md` at repo root.
 - **Dependencies:** If any required harness context is unreadable, **ABORT** per **`auto-context-gate.mdc`**.
+
+```cursor-arg
+dispatch: (test <commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>)
+param: name=<commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>; required=required; placeholder=<commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all>; class=literal; values=commands | rules | _functions | _mdc | _core | _roles | _settings | repo | all
+```

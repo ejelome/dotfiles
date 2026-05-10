@@ -47,7 +47,7 @@ output="$(cursor_assert_no_nested_mirrors "$cfg" "cursor-layout-test" 2>&1)"
 rc=$?
 set -e
 
-[[ $rc -ne 0 ]] || fail "cursor_assert_no_nested_mirrors should fail on legacy core/ path"
+[[ $rc -ne 0 ]] || fail "cursor_assert_no_nested_mirrors should fail on old core/ path"
 assert_contains "$output" "private Cursor folders under CURSOR_CONFIG_ROOT must be underscore-prefixed"
 
-echo "PASS: cursor-layout guards nested mirrors and legacy private folders"
+echo "PASS: cursor-layout guards nested mirrors and old private folders"

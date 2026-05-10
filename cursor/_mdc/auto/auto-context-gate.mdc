@@ -91,8 +91,8 @@ Incorrect: Invent a return type, add a stub client, or patch the caller from gue
 
 ## References
 
-- [style-guide](../../_core/style.md) — voice and structure for LLM-consumed rules when editing this file.
-- [document-standard](../../_core/document.md) — rule template and front matter.
-- [context-engineering](../../_core/context.md) — scope and context budget when editing rules.
-- [author-voice](../../_core/voice.md) — personal-account voice when edits touch narrative canon.
+- [style-guide](../../_core/style-guide.md) — voice and structure for LLM-consumed rules when editing this file.
+- [document-standard](../../_core/document-standard.md) — rule template and front matter.
+- [context-engineering](../../_core/context-management.md) — scope and context budget when editing rules.
+- [author-voice](../../_core/author-voice.md) — personal-account voice when edits touch narrative canon.
 - `shared-docs-precedence.mdc` — resolution order when another rule could conflict with a hard stop.

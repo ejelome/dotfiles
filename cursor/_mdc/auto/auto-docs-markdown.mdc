@@ -20,11 +20,11 @@ Contract: [shared-docs-precedence](../shared/shared-docs-precedence.mdc), [share
 
 **Precedence:** `shared-docs-precedence.mdc` is the sole source for rule order and tie-breakers.
 
-**Path overrides:** Devblog and `docs/playbook/` contract stacks override this file for their matched paths when loaded. Invocation-gated workflow instructions also override this file only for the active invocation. Order and tie-breakers live only in `shared-docs-precedence.mdc`.
+**Path overrides:** Devblog and `doc/playbook/` contract stacks override this file for their matched paths when loaded. Invocation-gated workflow instructions also override this file only for the active invocation. Order and tie-breakers live only in `shared-docs-precedence.mdc`.
 
 **Triggers:** `auto-docs-markdown`, `auto-markdown`, `markdown defaults`, `markdown-defaults`, `markdown base`, `rule router`
 
-Formatting and voice behavior follow [style-guide](../../_core/style.md). Personal-account voice follows `shared-docs-voice.mdc` for its glob-matched paths. TOC format and inclusion conditions are defined in `shared-docs-toc.mdc`.
+Formatting and voice behavior follow [style-guide](../../_core/style-guide.md). Personal-account voice follows `shared-docs-voice.mdc` for its glob-matched paths. TOC format and inclusion conditions are defined in `shared-docs-toc.mdc`.
 
 ### TOC behavior
 
@@ -34,14 +34,14 @@ TOC inclusion conditions are defined in `shared-docs-toc.mdc`. When a TOC is pre
 
 ## Examples
 
-Example: For a generic `README.md` section with no higher-priority rule loaded, apply this file plus [style-guide](../../_core/style.md); do not invent path-specific caps inside this base layer.
+Example: For a generic `README.md` section with no higher-priority rule loaded, apply this file plus [style-guide](../../_core/style-guide.md); do not invent path-specific caps inside this base layer.
 
 ## References
 
-- [style-guide](../../_core/style.md) — formatting and voice defaults for workspace Markdown.
-- [document-standard](../../_core/document.md) — per-type templates when markdown shape follows a named contract.
-- [context-engineering](../../_core/context.md) — context budget for stacked markdown rules.
-- [author-voice](../../_core/voice.md) — personal-account voice; stacks with `shared-docs-voice.mdc`.
+- [style-guide](../../_core/style-guide.md) — formatting and voice defaults for workspace Markdown.
+- [document-standard](../../_core/document-standard.md) — per-type templates when markdown shape follows a named contract.
+- [context-engineering](../../_core/context-management.md) — context budget for stacked markdown rules.
+- [author-voice](../../_core/author-voice.md) — personal-account voice; stacks with `shared-docs-voice.mdc`.
 - `shared-docs-voice.mdc` — personal-account voice for devblog paths.
 - `shared-docs-toc.mdc` — TOC format, anchors, and inclusion conditions.
 - `shared-docs-precedence.mdc` — rule order and tie-breakers.

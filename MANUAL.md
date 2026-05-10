@@ -10,7 +10,7 @@ Use these steps to reproduce `link.sh`'s repo-to-runtime projection when `link.s
 - [Reproduce the automated link pass by hand](#reproduce-the-automated-link-pass-by-hand)
   - [1. Clean nested mirrors under the Cursor config root, then assert](#1-clean-nested-mirrors-under-the-cursor-config-root-then-assert)
   - [2. Link required top-level home files](#2-link-required-top-level-home-files)
-  - [3. Remove legacy `~/.cursor/core` if present as a symlink](#3-remove-legacy-cursorcore-if-present-as-a-symlink)
+  - [3. Remove old `~/.cursor/core` if present as a symlink](#3-remove-old-cursorcore-if-present-as-a-symlink)
   - [4. Mirror `config/` into `~/.config/`](#4-mirror-config-into-config)
   - [5. Copy the Cursor runtime tree](#5-copy-the-cursor-runtime-tree)
   - [6. Link Cursor user settings (platform-specific User folder)](#6-link-cursor-user-settings-platform-specific-user-folder)
@@ -68,7 +68,7 @@ For each entry below, move `~/<dest>` to `~/<dest>.bak` when it exists and is no
 | `zshrc` | `.zshrc` |
 | `gitconfig` | `.gitconfig` |
 
-### 3. Remove legacy `~/.cursor/core` if present as a symlink
+### 3. Remove old `~/.cursor/core` if present as a symlink
 
 Remove `~/.cursor/core` if it is a symlink; skip if absent or not a symlink.
 
@@ -88,6 +88,7 @@ Under `CURSOR_CONFIG_ROOT` (e.g. `<repo>/cursor`):
 | `_mdc` | `.cursor/_mdc` | directory |
 | `_core` | `.cursor/_core` | directory |
 | `_roles` | `.cursor/_roles` | directory |
+| `_generated` | `.cursor/_generated` | directory |
 | `_tests` | `.cursor/_tests` | directory |
 | `_templates` | `.cursor/_templates` | directory |
 | `_CURSOR.md` | `.cursor/_CURSOR.md` | file |
