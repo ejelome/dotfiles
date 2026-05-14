@@ -16,7 +16,7 @@ die() {
 
 shortcut_spec() {
   case "$1" in
-    mod) printf '%s\n' 'mod|codex|gpt-5.4-mini|low|fast' ;;
+    mod) printf '%s\n' 'mod|codex|gpt-5.3-codex-spark|low|fast' ;;
     tw) printf '%s\n' 'tw|claude|claude-sonnet-4-6|medium' ;;
     pa) printf '%s\n' 'pa|claude|claude-opus-4-7|xhigh' ;;
     pe) printf '%s\n' 'pe|codex|gpt-5.5|medium|fast' ;;

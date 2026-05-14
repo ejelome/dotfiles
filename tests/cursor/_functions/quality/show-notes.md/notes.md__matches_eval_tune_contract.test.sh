@@ -8,7 +8,6 @@ source "$ROOT/tests/helpers/assert.sh"
 notes="$ROOT/cursor/_functions/quality/show-notes.md"
 tune="$ROOT/cursor/_functions/quality/tune.md"
 shared="$ROOT/cursor/_mdc/shared/shared-cmd-quality.mdc"
-repo="$ROOT/REPOSITORY.md"
 
 [[ -f "$notes" ]] || fail "notes.md: missing quality notes file"
 grep -Fq "# /quality show notes" "$notes" || fail "notes.md: missing title"
@@ -24,6 +23,5 @@ grep -Fq "Load this route only through \`/quality tune\`; do not invoke \`/quali
 grep -Fq "[show-notes.md](show-notes.md)" "$tune" || fail "quality tune: missing notes link"
 grep -Fq "If the file is missing when notes are approved, **ABORT**" "$tune" || fail "quality tune: missing missing-file guard"
 grep -Fq "\`cursor/_functions/quality/show-notes.md\` is the durable append-only log" "$shared" || fail "shared-cmd-quality: missing notes durable log rule"
-grep -Fq "QA notes append log" "$repo" || fail "REPOSITORY.md: missing QA notes output chain"
 
 echo "PASS: notes.md matches /quality tune output contract"

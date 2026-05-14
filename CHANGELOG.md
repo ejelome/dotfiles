@@ -5,6 +5,17 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-05-14] - 2026-05-14
+
+### Added
+
+- Root-level layouts work without a nested configuration directory.
+- Workflow guidance covers safe startup and recovery.
+
+### Changed
+
+- Project documentation reflects the expanded layout.
+
 ## [2026-05-10] - 2026-05-10
 
 ### Added
@@ -121,7 +132,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.10...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.14...HEAD
+[2026-05-14]: https://github.com/ejelome/dotfiles/compare/v2026.05.10...v2026.05.14
 [2026-05-10]: https://github.com/ejelome/dotfiles/compare/v2026.05.03...v2026.05.10
 [2026-05-03]: https://github.com/ejelome/dotfiles/compare/v2026.04.26...v2026.05.03
 [2026-04-26]: https://github.com/ejelome/dotfiles/compare/v2026.04.11...v2026.04.26

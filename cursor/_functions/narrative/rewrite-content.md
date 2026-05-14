@@ -135,5 +135,5 @@ coveredConcerns:
 ```cursor-arg
 dispatch: (narrative rewrite content <audit | align | gate> --role <key>)
 param: name=<audit | align | gate>; required=required; placeholder=<audit | align | gate>; class=literal; values=audit | align | gate
-param: name=--role; required=required; placeholder=<key>; class=literal; source=tools/collab/registry.py roles
+param: name=--role; required=required; placeholder=<key>; class=dynamic; source=tools/collab/registry.py roles
 ```

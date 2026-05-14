@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import os
 import re
 import subprocess
 import sys
@@ -11,12 +12,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CURSOR_ROOT = ROOT / "cursor"
+CURSOR_ROOT = Path(os.environ.get("CURSOR_CONFIG_ROOT", ROOT)).expanduser().resolve()
 FUNCTIONS_DIR = CURSOR_ROOT / "_functions"
 ARTIFACT = CURSOR_ROOT / "_generated" / "command-reference.md"
 BEGIN_MARKER = "<!-- BEGIN GENERATED:COMMAND_REFERENCE -->"
 END_MARKER = "<!-- END GENERATED:COMMAND_REFERENCE -->"
 ROLE_SOURCE = "tools/collab/registry.py roles"
+ROLE_DYNAMIC_DETAIL = "role keys from _roles/"
 VALID_CLASSES = {"literal", "type", "dynamic"}
 VALID_REQUIRED = {"required", "optional"}
 
@@ -123,6 +125,7 @@ def registry_role_keys() -> list[str]:
     proc = subprocess.run(
         [sys.executable, str(ROOT / "tools" / "collab" / "registry.py"), "roles"],
         cwd=ROOT,
+        env={**os.environ, "CURSOR_CONFIG_ROOT": str(CURSOR_ROOT)},
         check=True,
         text=True,
         stdout=subprocess.PIPE,
@@ -182,6 +185,9 @@ def parse_cursor_arg(path: Path, text: str, slash: str, signature: str) -> tuple
                 detail = data["source"]
             else:
                 raise ReferenceError(f"{path}: literal param needs values or source")
+        elif value_class == "dynamic" and data.get("source") == ROLE_SOURCE:
+            registry_role_keys()
+            detail = ROLE_DYNAMIC_DETAIL
         else:
             detail = data.get("rule", "")
             if not detail:
@@ -294,8 +300,8 @@ def check_artifact() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render or validate the generated command reference.")
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--render", action="store_true", help="update cursor/_generated/command-reference.md")
-    mode.add_argument("--check", action="store_true", help="verify cursor/_generated/command-reference.md is current")
+    mode.add_argument("--render", action="store_true", help="update _generated/command-reference.md")
+    mode.add_argument("--check", action="store_true", help="verify _generated/command-reference.md is current")
     args = parser.parse_args()
     try:
         if args.render:

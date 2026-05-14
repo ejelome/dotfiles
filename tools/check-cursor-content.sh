@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT/cursor}"
+CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT}"
 
 die() {
   echo "check-cursor-content: $*" >&2
@@ -296,6 +296,81 @@ check_content_invariants() {
   done < "$invariants_file"
 }
 
+require_contains() {
+  local file="$1" needle="$2" message="$3"
+  grep -Fq -- "$needle" "$file" || die "$(relpath "$file"): $message"
+}
+
+check_agent_guidance_docs() {
+  local collab effort effort_json model lifecycle budget polish flags helper_output registry_py speak join phase_commands show_flags
+  collab="$CURSOR_CONFIG_ROOT/_functions/collab"
+  effort="$collab/_agent-effort.md"
+  effort_json="$collab/_agent-effort.json"
+  model="$collab/_agent-model.md"
+  lifecycle="$collab/_agent-lifecycle.md"
+  budget="$collab/_contribution-budget.md"
+  polish="$collab/_moderator-polish.md"
+  flags="$collab/_flag-taxonomy.md"
+  helper_output="$collab/_helper-output.md"
+  registry_py="$ROOT/tools/collab/registry.py"
+  speak="$collab/speak.md"
+  join="$collab/join.md"
+  phase_commands="$collab/_phase-commands.md"
+  show_flags="$collab/show-flags.md"
+
+  [[ -f "$effort" || -f "$effort_json" || -f "$model" || -f "$lifecycle" ]] || return 0
+
+  [[ -f "$effort" ]] || die "cursor/_functions/collab/_agent-effort.md: missing collab shared dependency"
+  [[ -f "$effort_json" ]] || die "cursor/_functions/collab/_agent-effort.json: missing collab shared dependency"
+  [[ -f "$model" ]] || die "cursor/_functions/collab/_agent-model.md: missing collab shared dependency"
+  [[ -f "$lifecycle" ]] || die "cursor/_functions/collab/_agent-lifecycle.md: missing collab shared dependency"
+  [[ -f "$budget" ]] || die "cursor/_functions/collab/_contribution-budget.md: missing collab shared dependency"
+  [[ -f "$polish" ]] || die "cursor/_functions/collab/_moderator-polish.md: missing collab shared dependency"
+  [[ -f "$flags" ]] || die "cursor/_functions/collab/_flag-taxonomy.md: missing collab shared dependency"
+  [[ -f "$helper_output" ]] || die "cursor/_functions/collab/_helper-output.md: missing collab shared dependency"
+
+  require_contains "$effort" "[\`_agent-effort.json\`](_agent-effort.json)" "missing link to _agent-effort.json"
+  require_contains "$model" "[\`_agent-effort.md\`](_agent-effort.md)" "missing link to _agent-effort.md"
+  require_contains "$model" "[\`_agent-lifecycle.md\`](_agent-lifecycle.md)" "missing link to _agent-lifecycle.md"
+  require_contains "$model" "honest-effort forensic capture" "missing join-model forensic-capture guidance"
+  require_contains "$model" "not an enforced constraint" "missing join-model advisory guidance"
+  require_contains "$model" "fallback" "missing fallback guidance"
+
+  require_contains "$lifecycle" "[\`_agent-effort.md\`](_agent-effort.md)" "missing link to _agent-effort.md"
+  require_contains "$lifecycle" "[\`_agent-model.md\`](_agent-model.md)" "missing link to _agent-model.md"
+  require_contains "$lifecycle" "The join-time model does not change; only effort adjusts between phases." "missing fixed-model lifecycle guidance"
+
+  require_contains "$effort" "[\`_agent-model.md\`](_agent-model.md)" "missing link to _agent-model.md"
+  require_contains "$effort" "[\`_agent-lifecycle.md\`](_agent-lifecycle.md)" "missing link to _agent-lifecycle.md"
+
+  [[ -f "$join" ]] && require_contains "$join" "cursor/_functions/collab/_agent-effort.json" "missing relocated effort matrix reference"
+  if [[ -f "$speak" ]]; then
+    require_contains "$speak" "cursor/_functions/collab/_agent-effort.json" "missing relocated effort matrix reference"
+    require_contains "$speak" "cursor/_functions/collab/_agent-effort.md" "missing relocated effort guidance reference"
+    require_contains "$speak" "cursor/_functions/collab/_moderator-polish.md" "missing relocated moderator polish reference"
+  fi
+  [[ -f "$phase_commands" ]] && require_contains "$phase_commands" "[\`_agent-effort.md\`](_agent-effort.md)" "missing same-namespace effort reference"
+  [[ -f "$show_flags" ]] && require_contains "$show_flags" "cursor/_functions/collab/_flag-taxonomy.md" "missing relocated flag taxonomy reference"
+
+  require_contains "$registry_py" "DEFAULT_CURSOR_ROOT = Path(os.environ.get('CURSOR_CONFIG_ROOT', ROOT)).expanduser().resolve()" "helper default must resolve Cursor config root from repo root"
+  require_contains "$registry_py" "DEFAULT_EFFORT_PATH = DEFAULT_CURSOR_ROOT / '_functions/collab/_agent-effort.json'" "helper default must use root-layout effort matrix"
+  require_contains "$registry_py" "DEFAULT_BUDGET_PATH = DEFAULT_CURSOR_ROOT / '_functions/collab/_contribution-budget.md'" "helper default must use root-layout contribution budget"
+  require_contains "$registry_py" "DEFAULT_MODERATOR_POLISH_PATH = DEFAULT_CURSOR_ROOT / '_functions/collab/_moderator-polish.md'" "helper default must use root-layout moderator polish"
+  require_contains "$registry_py" "DEFAULT_FLAG_TAXONOMY_PATH = DEFAULT_CURSOR_ROOT / '_functions/collab/_flag-taxonomy.md'" "helper default must use root-layout flag taxonomy"
+
+  while IFS= read -r file; do
+    local stale_line
+    stale_line="$(grep -n -E '\.collabs/records/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+' "$file" | head -n 1 || true)"
+    [[ -z "$stale_line" ]] || die "$(cursor_source_key "$file"):${stale_line}: remove stale .collabs record ID citation"
+  done < <(find "$CURSOR_CONFIG_ROOT" -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.json' \) | sort)
+
+  while IFS= read -r file; do
+    local effort_line
+    effort_line="$(grep -n -E '(^|[^[:alnum:]_-])extra[- ]high([^[:alnum:]_-]|$)' "$file" | head -n 1 || true)"
+    [[ -z "$effort_line" ]] || die "$(cursor_source_key "$file"):${effort_line}: use canonical effort token xhigh"
+  done < <(find "$CURSOR_CONFIG_ROOT" -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.json' \) | sort)
+}
+
 flagged_term_pattern() {
   local terms=(
     'leg''acy'
@@ -439,6 +514,7 @@ check_line_budget
 check_command_shapes
 check_rule_shapes
 check_content_invariants
+check_agent_guidance_docs
 check_prose_dispatch_framing
 check_flagged_terms
 

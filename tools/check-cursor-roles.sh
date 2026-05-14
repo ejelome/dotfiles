@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ROLES_DIR="${ROLES_DIR:-$ROOT/cursor/_roles}"
+CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT}"
+ROLES_DIR="${ROLES_DIR:-$CURSOR_CONFIG_ROOT/_roles}"
 
 die() {
   echo "check-cursor-roles: $*" >&2
@@ -14,7 +15,7 @@ usage() {
 Usage: ./tools/check-cursor-roles.sh [--roles-dir <path>]
 
 Options:
-  --roles-dir <path>  Validate a role catalog other than cursor/_roles.
+  --roles-dir <path>  Validate a role catalog other than _roles.
 USAGE
 }
 
@@ -87,6 +88,13 @@ for path in paths:
         die(f"{path}: concerns must be a non-empty array")
     if any(not isinstance(item, str) or not item.strip() for item in concerns):
         die(f"{path}: concerns must contain only non-empty strings")
+
+    prohibitions = data.get("prohibitions")
+    if prohibitions is not None:
+        if not isinstance(prohibitions, list):
+            die(f"{path}: prohibitions must be an array when present")
+        if any(not isinstance(item, str) or not item.strip() for item in prohibitions):
+            die(f"{path}: prohibitions must contain only non-empty strings")
 
 print("check-cursor-roles: OK")
 PY

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${ROOT:-$(cd "$(dirname "$0")/../../../.." && pwd)}"
+ROOT="${ROOT:-$(cd "$(dirname "$0")/../../../../.." && pwd)}"
 # shellcheck source=tests/helpers/assert.sh
 source "$ROOT/tests/helpers/assert.sh"
 
-file="$ROOT/cursor/_core/agent-effort.md"
+file="$ROOT/cursor/_functions/collab/_agent-effort.md"
 
 grep -Fq 'Declared effort is an audit marker, not a runtime-enforced floor.' "$file" || fail "agent-effort.md: missing declaration trust model"
 grep -Fq 'The protocol detects opt-in escalation only.' "$file" || fail "agent-effort.md: missing selection-bias limitation"
@@ -23,6 +23,6 @@ do
   grep -Fq "\`$category\`" "$file" || fail "agent-effort.md: missing taxonomy category: $category"
 done
 
-grep -Fq 'Every change to `agent-effort.json` or to the escalation signal taxonomy in this file must cite' "$file" || fail "agent-effort.md: missing taxonomy change-motivation rule"
+grep -Fq 'Every change to `_agent-effort.json` or to the escalation signal taxonomy in this file must cite' "$file" || fail "agent-effort.md: missing taxonomy change-motivation rule"
 
 echo "PASS: agent-effort.md declares effort override taxonomy"

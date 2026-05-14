@@ -30,6 +30,12 @@ cat >"$work/cursor/_functions/collab/rewrite-speak.md" <<'EOF'
 **Slash:** `/collab rewrite speak`
 EOF
 
+cat >"$work/cursor/_functions/collab/_shared-doc.md" <<'EOF'
+# Shared collab doc
+
+**Slash:** (reference only — not an invocable route)
+EOF
+
 cat >"$work/cursor/_functions/test/run.md" <<'EOF'
 # /test
 

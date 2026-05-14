@@ -2,7 +2,7 @@
 
 ![Smoke check](https://github.com/ejelome/dotfiles/actions/workflows/smoke-check.yml/badge.svg)
 
-Dotfiles for shell, Git, Cursor, and local development workflows.
+Dotfiles for shell, Git, and local development workflows.
 
 ![Terminal session with this dotfiles setup](screenshot.png)
 
@@ -21,7 +21,7 @@ Dotfiles for shell, Git, Cursor, and local development workflows.
 
 ## Overview
 
-This repository is the source of truth for shell, Git, and Cursor settings. Clone it, then run `./link.sh` to create local symlinks. Re-run `./link.sh` after pulling or editing tracked files to keep symlinks current. The Cursor tree (`AGENTS.md`, `cursor/_core/`, slash commands) guides editors and tools. [REPOSITORY.md](REPOSITORY.md) defines the authoritative repo-runtime contract.
+This repository is the source of truth for shell, Git, and local dev settings. Clone it, then run `./link.sh` to create local symlinks. Re-run `./link.sh` after pulling or editing tracked files to keep symlinks current. [REPOSITORY.md](REPOSITORY.md) defines the authoritative repo-runtime contract.
 
 ## Setup
 
@@ -34,9 +34,7 @@ This repository is the source of truth for shell, Git, and Cursor settings. Clon
 
 ## Usage
 
-Re-run `./link.sh` after pulling, switching branches, or editing tracked config so `~` and Cursor user paths reflect the repository.
-
-If the Cursor config is outside `./cursor`, set `CURSOR_CONFIG_ROOT` or pass `--cursor-config-root` / `--cursor-config-root=<path>` to `./link.sh`. See `./link.sh --help` for the full option list.
+Re-run `./link.sh` after pulling, switching branches, or editing tracked config so `~` reflects the repository.
 
 Before pushing or after changing paths that the checks enforce, run:
 
@@ -49,25 +47,22 @@ SKIP_TESTS_RUN=1 ./tools/smoke-check.sh
 
 - `.github/` — CI workflows for smoke checks and shell tests on Ubuntu and macOS
 - `config/` — Starship shared configuration
-- `cursor/` — Cursor rules, commands, and config tree; default `CURSOR_CONFIG_ROOT` for `link.sh`
 - `launcher/` — Cursor workspace launcher setup scripts
 - `tests/` — shell regression suite
-- `tools/` — smoke check, link helpers, agent checks, and `cursor-cli` scripts
-- `link.sh` — entry point for projecting this tree into `~` and Cursor user paths
+- `tools/` — smoke check, link helpers, and agent checks
+- `link.sh` — entry point for projecting this tree into `~`
 
 ## Links
 
 - [REPOSITORY.md](REPOSITORY.md)
 - [AGENTS.md](AGENTS.md)
 - [MANUAL.md](MANUAL.md)
-- [cursor/_CURSOR.md](cursor/_CURSOR.md)
-- [cursor/commands/commands.md](cursor/commands/commands.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## Status
 
 > Last updated: 2026-04-26
 
-CI runs smoke checks and shell tests on Ubuntu and macOS. `link.sh` is the supported way to project this repository’s shell and Cursor configuration.
+CI runs smoke checks and shell tests on Ubuntu and macOS. `link.sh` is the supported way to project this repository’s shell configuration.
 
 See [CHANGELOG.md](CHANGELOG.md) for full history.

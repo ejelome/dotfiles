@@ -13,7 +13,7 @@ cd "$tmp/repo"
 perl -0pi -e 's/<!-- BEGIN GENERATED:COMMAND_REFERENCE -->\n/<!-- BEGIN GENERATED:COMMAND_REFERENCE -->\nSTALE\n/' cursor/_generated/command-reference.md
 
 set +e
-output="$(tools/cursor/command-reference.py --check 2>&1)"
+output="$(CURSOR_CONFIG_ROOT="$PWD/cursor" tools/cursor/command-reference.py --check 2>&1)"
 status=$?
 set -e
 

@@ -20,6 +20,8 @@ Cross-route rules that apply to every route under `commands/collab` and the `too
 
 Route prose declares the contract. The helper enforces it. Every documented ABORT in a route file maps 1:1 to a helper subcommand check, or is explicitly marked `agent-honor-system` in the route notes to signal it relies on agent judgment rather than runtime enforcement.
 
+Free-text tokens are literal content. A route argument such as a title, label, message, or routing-only dispatch token is never work to execute unless the route explicitly defines an execution phase for that content.
+
 Maintainer check: `git grep -rn 'agent-honor-system' cursor/_functions/collab/` shows every agent-honor-system clause. Any undocumented ABORT that has neither a helper check nor this marker is a defect.
 
 **2. Registry as source of truth; transcript as human ledger**

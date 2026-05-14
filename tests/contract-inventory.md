@@ -2,13 +2,13 @@
 
 Initial inventory for the test-reduction collaboration opened on 2026-05-08.
 
-This is a first executable inventory, not a deletion list. The audit estimate named 63 doc-contract tests; the current tree contains 50 pure doc-contract shell tests plus fixture-backed mixed tests that also contain doc assertions. Until that discrepancy is reconciled, only the verified rows below are eligible for classification work.
+This is a first executable inventory, not a deletion list. The audit estimate named 63 doc-contract tests; the current tree contains 49 pure doc-contract shell tests plus fixture-backed mixed tests that also contain doc assertions. Until that discrepancy is reconciled, only the verified rows below are eligible for classification work.
 
 ## Summary
 
 | Bucket | Count | Status |
 | --- | ---: | --- |
-| Pure doc-contract shell tests | 50 | Retain pending owner review |
+| Pure doc-contract shell tests | 49 | Retain pending owner review |
 | Mixed doc-contract shell tests | 3 | Retain; fixture behavior present |
 | Repo artifact and golden-adjacent shell tests | 10 | Retain unless replacement coverage and review land |
 | Golden snapshot files | 2 | Not deleted in this batch |
@@ -27,7 +27,7 @@ Rows below default to `REGRESSION: unknown`. A later deletion batch must check g
 | `tests/cursor/_core/command-standard.md/command-standard.md__declares_playbook_contracts.test.sh` | grep | Command playbook trigger/steps/notes contract | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_core/context-management.md/context-management.md__declares_scope_and_budget_contracts.test.sh` | grep | Context scope and 250-line budget contract | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_core/document-standard.md/document-standard.md__readme_skeleton_has_required_sections.test.sh` | grep | README skeleton and description limits | self | prose-duplicate | migrate before deletion |
-| `tests/cursor/_core/agent-effort.md/agent-effort.md__declares_effort_override_taxonomy.test.sh` | grep | Effort override taxonomy | self | prose-duplicate | migrate before deletion |
+| `tests/cursor/_functions/collab/_agent-effort.md/_agent-effort.md__declares_effort_override_taxonomy.test.sh` | grep | Effort override taxonomy | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_core/command-argument.md/command-argument.md__declares_force_negative_contract.test.sh` | grep | Force flag negative contract | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_core/style-guide.md/style-guide.md__declares_core_markdown_contracts.test.sh` | grep | Core markdown style contract | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_functions/agent/upgrade.md/upgrade.md__declares_upgrade_safety_contract.test.sh` | grep | Agent upgrade safety gates | self | prose-duplicate | migrate before deletion |
@@ -42,7 +42,6 @@ Rows below default to `REGRESSION: unknown`. A later deletion batch must check g
 | `tests/cursor/_functions/collab/rewrite-summary.md/re-summarize.md__declares_rewrite_contract.test.sh` | grep | Collab rewrite summary in-place contract | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_functions/collab/routes__declare_explicit_record_targeting.test.sh` | grep | Collab route registry targeting language | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_functions/collab/run-plan.md/execute.md__declares_completion_only_execution_marker.test.sh` | grep | Collab run-plan completion-only execution marker | self | prose-duplicate | migrate before deletion |
-| `tests/cursor/_functions/collab/run-plan.md/run-plan.md__declares_layer1_enforcement_contract.test.sh` | grep | Collab run-plan layer-1 enforcement note | central-checker | prose-duplicate | invariant listed |
 | `tests/cursor/_functions/collab/set.md/set.md__declares_field_ownership_boundary.test.sh` | grep | Collab set field ownership boundary | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_functions/collab/show-policy.md/policy.md__declares_deferred_integrity_triggers.test.sh` | grep | Collab policy deferred integrity triggers | self | prose-duplicate | migrate before deletion |
 | `tests/cursor/_functions/collab/show-policy.md/policy.md__no_hardcoded_acronyms.test.sh` | grep | Collab policy role discovery avoids hardcoded acronyms | self | prose-duplicate | migrate before deletion |
@@ -111,6 +110,17 @@ Rows below default to `REGRESSION: unknown`. A later deletion batch must check g
 - Replacement owner: `tests/README.md/README.md__matches_docs_readme_contract.test.sh`, `tests/MANUAL.md/MANUAL.md__mirrors_link_targets_contract.test.sh`, and `tools/check-cursor-content.sh`.
 - Coverage-equivalence rationale: full-file snapshots no longer own ordinary prose stability; required sections, generated TOC shape, source-of-truth markers, link validity, and generated link-target rows now own the artifact contract.
 - Validation commands: `SKIP_TESTS_RUN=1 ./tools/smoke-check.sh`, `./tests/run.sh`, `./link.sh`, `SMOKE_CHECK_RUNTIME=1 SKIP_TESTS_RUN=1 ./tools/smoke-check.sh`.
+
+## Deletion Batch 1 Report
+
+- Selected vertical: `tests/cursor/_functions/collab/run-plan.md/run-plan.md__declares_layer1_enforcement_contract.test.sh`.
+- Test-count delta: 127 -> 126 shell test files; 1 phrase-check test removed.
+- Phrase-grep delta: the route-local shell test was removed; all 5 protected phrases are now named in `cursor/_generated/content-invariants.tsv`.
+- Replacement owner: `tools/check-cursor-content.sh` reads `cursor/_generated/content-invariants.tsv` and validates the phrases against `cursor/_functions/collab/run-plan.md`.
+- Deletion gate: satisfied. The replacement doc/helper coverage landed in the same change and validation passed.
+- Baseline measurement: `bash tests/cursor/_functions/collab/run-plan.md/run-plan.md__declares_layer1_enforcement_contract.test.sh` passed in 0.02s; baseline `./tools/check-cursor-content.sh` passed in 31.94s.
+- Final measurement: `./tools/check-cursor-content.sh` passed in 32.11s; `SKIP_TESTS_RUN=1 ./tools/smoke-check.sh` passed in 37.32s.
+- Exclusions kept out: secret scanning, chain consolidation, floor-rule 3 retirement, and external walkthrough work.
 
 ## Reviewer Findings (pa, 2026-05-08)
 

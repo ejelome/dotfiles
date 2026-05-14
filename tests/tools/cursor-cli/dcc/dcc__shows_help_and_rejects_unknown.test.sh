@@ -7,7 +7,7 @@ source "$ROOT/tests/helpers/assert.sh"
 
 help_output="$("$ROOT/tools/cursor-cli/dcc" --help)"
 assert_contains "$help_output" "Usage: dcc <shortcut> [args...]"
-assert_contains "$help_output" '  mod  Open Codex as "Moderator" with model gpt-5.4-mini, service tier fast, and effort low'
+assert_contains "$help_output" '  mod  Open Codex as "Moderator" with model gpt-5.3-codex-spark, service tier fast, and effort low'
 assert_contains "$help_output" '  tw   Open Claude as "Technical Writer" with model claude-sonnet-4-6 and effort medium'
 assert_contains "$help_output" '  pa   Open Claude as "Principal Architect" with model claude-opus-4-7 and effort xhigh'
 assert_contains "$help_output" '  pe   Open Codex as "Platform Engineer" with model gpt-5.5, service tier fast, and effort medium'

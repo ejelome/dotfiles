@@ -18,7 +18,8 @@ write_role() {
 {
   "key": "$key",
   "displayName": "Test Role",
-  "concerns": ["coverage"]
+  "concerns": ["coverage"],
+  "prohibitions": ["Do not skip validation."]
 }
 JSON
 }
@@ -42,6 +43,23 @@ status=$?
 set -e
 [[ $status -ne 0 ]] || fail "check-cursor-roles should fail when a required key is missing"
 assert_contains "$output" "missing required key: concerns"
+
+invalid_prohibitions="$tmp/invalid-prohibitions"
+mkdir -p "$invalid_prohibitions"
+cat >"$invalid_prohibitions/pe.json" <<'JSON'
+{
+  "key": "pe",
+  "displayName": "Platform Engineer",
+  "concerns": ["coverage"],
+  "prohibitions": "Do not skip validation."
+}
+JSON
+set +e
+output="$("$ROOT/tools/check-cursor-roles.sh" --roles-dir "$invalid_prohibitions" 2>&1)"
+status=$?
+set -e
+[[ $status -ne 0 ]] || fail "check-cursor-roles should fail when prohibitions is not an array"
+assert_contains "$output" "prohibitions must be an array when present"
 
 mismatch="$tmp/mismatch"
 write_role "$mismatch" "platform" "pe"

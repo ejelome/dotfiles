@@ -38,6 +38,12 @@ for path in sorted(root.glob("*.json")):
         raise SystemExit(f"{path}: concerns must be a non-empty array")
     if any(not isinstance(item, str) or not item.strip() for item in concerns):
         raise SystemExit(f"{path}: concerns must contain only non-empty strings")
+    prohibitions = data.get("prohibitions")
+    if prohibitions is not None:
+        if not isinstance(prohibitions, list):
+            raise SystemExit(f"{path}: prohibitions must be an array when present")
+        if any(not isinstance(item, str) or not item.strip() for item in prohibitions):
+            raise SystemExit(f"{path}: prohibitions must contain only non-empty strings")
 PY
 
 python3 "$ROOT/tools/cursor/roles.py" --roles-dir "$ROOT/cursor/_roles" validate >/dev/null
@@ -47,7 +53,8 @@ cat >"$tmp/duplicate/pe.json" <<'JSON'
 {
   "key": "pe",
   "displayName": "Platform Engineer",
-  "concerns": ["effectiveness"]
+  "concerns": ["effectiveness"],
+  "prohibitions": ["Do not bypass validation."]
 }
 JSON
 cat >"$tmp/duplicate/platform.json" <<'JSON'
@@ -66,6 +73,20 @@ mkdir -p "$tmp/invalid-json"
 printf '{' >"$tmp/invalid-json/pe.json"
 if python3 "$ROOT/tools/cursor/roles.py" --roles-dir "$tmp/invalid-json" validate >/dev/null 2>&1; then
   echo "FAIL: role helper must reject invalid JSON" >&2
+  exit 1
+fi
+
+mkdir -p "$tmp/invalid-prohibitions"
+cat >"$tmp/invalid-prohibitions/pe.json" <<'JSON'
+{
+  "key": "pe",
+  "displayName": "Platform Engineer",
+  "concerns": ["effectiveness"],
+  "prohibitions": "Do not bypass validation."
+}
+JSON
+if python3 "$ROOT/tools/cursor/roles.py" --roles-dir "$tmp/invalid-prohibitions" validate >/dev/null 2>&1; then
+  echo "FAIL: role helper must reject non-array prohibitions" >&2
   exit 1
 fi
 

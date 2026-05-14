@@ -24,6 +24,7 @@ Use installed commands from `~/.cursor/commands`.
 EOF
 
 output="$({
+  CURSOR_CONFIG_ROOT="$ROOT/cursor" \
   SKIP_TESTS_RUN=1 \
   PYTHONPYCACHEPREFIX="$tmp/pycache" \
   PROJECT_DOT_CURSOR="$project" \

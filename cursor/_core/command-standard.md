@@ -167,7 +167,7 @@ One sentence — purpose of the route and when to use it.
 
 - Public command links may target sibling command files, `../_functions/**/*.md`, `../_core/*.md`, fragment-only anchors, `../rules/`, `../_mdc/`, and optional `https://` / `http://` context links.
 - Private function links may target sibling `_functions/**/*.md`, `../../_core/*.md`, `../../_roles/*.json`, `../../_mdc/**/*.mdc`, fragment-only anchors, and optional `https://` / `http://` context links.
-- Required authority for command behavior may come only from public command files, private function files, shared role JSON under `_roles/`, core contracts under `_core/`, rule router files under `../rules/`, and private rule files under `../_mdc/`.
+- Required authority for command behavior may come only from public command files, private function files, shared role JSON under `_roles/`, core contracts under `_core/`, rule router files under `../rules/`, private rule files under `../_mdc/`, or a `_functions/<ns>/_*.md` shared-dependency file within the same namespace.
 - `_functions/test/run.md` may also require `~/.cursor/_tests/commands.md`, `~/.cursor/_tests/rules.md`, `~/.cursor/_tests/_functions.md`, `~/.cursor/_tests/_mdc.md`, `~/.cursor/_tests/_core.md`, `~/.cursor/_tests/_roles.md`, `~/.cursor/_tests/_settings.md`, `~/.cursor/_tests/_tests.md`, and `REPOSITORY.md` at repo root.
 - External URLs are optional context only and never required authorities.
 

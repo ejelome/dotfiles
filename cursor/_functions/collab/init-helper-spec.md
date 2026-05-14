@@ -52,11 +52,7 @@ The `sequence` field is the next unused positive integer across all collab entri
 
 ### agentId capture at init
 
-The moderator's `agentId` is captured once at init time, not at first speak. The route must pass the declared helper flag `--agent-id <agentId>`, applying the same precedence as `join-participants`:
-
-1. Model identifier, when the harness exposes one (e.g., `cursor-composer`).
-2. Harness or surface name, when no model identifier is available.
-3. The literal `unknown` - exact lowercase - when the harness does not expose a usable value.
+The moderator's `agentId` is captured once at init time, not at first speak. The route must pass the declared helper flag `--agent-id <agentId>`, applying the shared vocabulary and precedence in [_agent-id.md](_agent-id.md).
 
 Do not copy `agentId` from role files, prior records, examples, or documentation. Record the at-init value in registry `participants` under the moderator row. No speak-time revalidation.
 

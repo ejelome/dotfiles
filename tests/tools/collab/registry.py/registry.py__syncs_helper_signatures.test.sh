@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="${ROOT:-$(cd "$(dirname "$0")/../../../.." && pwd)}"
 # shellcheck source=tests/helpers/assert.sh
 source "$ROOT/tests/helpers/assert.sh"
+export CURSOR_CONFIG_ROOT="$ROOT/cursor"
 
 python3 - "$ROOT" <<'PY' || fail "registry helper: helper signatures must stay in sync with route-owned expectations"
 import importlib.util
@@ -32,6 +33,7 @@ expected_subcommands = {
     "flag-inventory",
     "join-participants",
     "retract-speak",
+    "rewrite-speak-render",
     "set",
     "speak-render",
     "unset",
@@ -61,11 +63,15 @@ assert {"--agent-id", "--roles-dir", "--json"}.issubset(option_dests("join-parti
 assert required_positionals("speak-render") == ["target", "role"]
 assert {"--content-file", "--observed-revision", "--timestamp", "--json", "--caller-role", "--verbatim"}.issubset(option_dests("speak-render"))
 
+assert required_positionals("rewrite-speak-render") == ["target", "role"]
+assert {"--content-file", "--timestamp", "--caller-role"}.issubset(option_dests("rewrite-speak-render"))
+
 assert required_positionals("execution") == ["target", "role", "status", "date"]
 assert {"--assigned-role", "--auto-close", "--validation-result", "--validation-scope", "--touched-path", "--caller-role"}.issubset(option_dests("execution"))
 
 for command in ("advance", "archive", "close", "delete", "set", "unset"):
     assert "--caller-role" in option_dests(command), command
+assert "--roles-dir" in option_dests("set")
 PY
 
 echo "PASS: collab helper signatures expose required args, flags, and caller-role gates"
