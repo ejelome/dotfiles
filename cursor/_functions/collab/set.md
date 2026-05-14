@@ -5,7 +5,7 @@ Update collab metadata fields that do not already belong to a dedicated mutation
 ## Trigger
 
 **Slash:** `/collab set`
-**Signature:** `/collab set <field> <value>`; or `/collab set reviewer <role>` / `/collab set reviewer --clear`
+**Signature:** `/collab set <field> <value>`; or `/collab set reviewer <role>` / `/collab set reviewer --clear` / `/collab set reviewer-optional-phases <phase>...`
 **Prose dispatch:** `(collab set ...)` — for non-Cursor agents; not terminal-executable in Cursor.
 **Search phrases:** collab set, set collaboration metadata, update collab metadata
 
@@ -22,6 +22,7 @@ Update collab metadata fields that do not already belong to a dedicated mutation
    - `turn-order` parses space-separated role keys, validates uniqueness and membership in registry `participants`, validates that no key equals `reviewerRole`, then updates registry `turnOrder` and the Turn order cell in the transcript state table.
    - `reviewer <role>` validates that `<role>` is in registry `participants`, that `<role>` does not equal `moderatorRole`, and that `<role>` is not in registry `turnOrder`; then sets registry `reviewerRole` to `<role>` with default `reviewerMode` (`last-in-convergent-phases`) and default `reviewerOptionalPhases` (`["Discussion"]`), and mirrors the value in the Reviewer cell of the transcript status table via `tools/collab/registry.py render-status`.
    - `reviewer --clear` removes `reviewerRole`, `reviewerMode`, and `reviewerOptionalPhases` from the registry entry, then calls `tools/collab/registry.py render-status <target>` to update the transcript status table.
+   - `reviewer-optional-phases <phase>...` validates every phase name against the phase sequence, rejects duplicates, persists registry `reviewerOptionalPhases`, and re-renders the managed header/status surfaces. Changing this field after a phase has advanced does not retroactively admit the reviewer into the earlier phase.
    - `active-phase` is recovery-only: require `--force`, validate against the phase sequence, then update registry `activePhase` and the Active phase cell in the transcript state table.
 7. Stop after updating registry and transcript. Do not append a contribution.
 
@@ -29,15 +30,15 @@ Update collab metadata fields that do not already belong to a dedicated mutation
 
 - **Parameters:** target collab slug, id, or numeric `#N` as the first token after `set`; when absent, resolved per **Registry targeting** in **Notes**. `<field>` — required metadata field name. `<value>` — required replacement value (omit for `reviewer --clear`). `--force` — optional recovery-only override for fields that are normally owned elsewhere.
 - **Registry targeting:** Resolve the target collab from `.collabs/registry.json`, using `tools/collab/registry.py` as the shared helper. When the first token after the route is present, treat it as a collab slug, id, or stable numeric position. Otherwise use `activeCollabId`. If the registry is unreadable or invalid, the token does not match any entry, or `activeCollabId` is empty, **ABORT**: registry target unavailable; name the registry field or token.
-- **Field ownership:** `title` -> `set`; `description` -> `set`; `turn-order` -> `set`; `reviewer` -> `set`; `status` -> `open` / `close`; `participants` -> `join` / `kick`; `active-phase` -> `next` / `prev` (or `set --force` for recovery only).
+- **Field ownership:** `title` -> `set`; `description` -> `set`; `turn-order` -> `set`; `reviewer`, `reviewerOptionalPhases` -> `set`; `status` -> `open` / `close`; `participants` -> `join` / `kick`; `active-phase` -> `next` / `prev` (or `set --force` for recovery only).
 - **Ownership boundary:** Every mutable field has exactly one normal mutation path. `/collab set` must refuse fields owned by another route unless `--force` is used for recovery-only metadata repair.
 - **Post-state resume signal:** After `/collab set` completes, re-establish collab context with `tools/collab/registry.py speak-state --resume <target> <role>` before issuing the next collab command.
-- **Floor rule 3 compliance:** `title`, `description`, `turn-order`, and `active-phase` transcript-side updates (H1, opening text, Turn order cell, Active phase cell) are prose-rendered; `tools/collab/registry.py set` writes registry only. Tracked per [`_core/route-invariant.md`](../../_core/route-invariant.md) floor rule 3.
+- **Sync contract compliance:** `title`, `description`, `turn-order`, and `active-phase` transcript-side updates (H1, opening text, Turn order cell, Active phase cell) are prose-rendered; `tools/collab/registry.py set` writes registry only. This is declared under the sync contract in [`_core/route-invariant.md`](../../_core/route-invariant.md).
 
 ```cursor-arg
 dispatch: (collab set <field> <value>)
-param: name=<field>; required=required; placeholder=<field>; class=literal; values=title | description | turn-order | reviewer | active-phase
+param: name=<field>; required=required; placeholder=<field>; class=literal; values=title | description | turn-order | reviewer | reviewer-optional-phases | active-phase
 param: name=<value>; required=required; placeholder=<value>; class=type; rule=field-specific replacement value
-param: name=<role>; required=required; placeholder=<role>; class=literal; source=tools/collab/registry.py roles
+param: name=<role>; required=required; placeholder=<role>; class=dynamic; source=tools/collab/registry.py roles
 param: name=--clear; required=optional; placeholder=--clear; class=literal; values=present
 ```

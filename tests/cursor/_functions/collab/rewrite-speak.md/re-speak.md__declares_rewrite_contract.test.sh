@@ -20,8 +20,8 @@ grep -Fq 'use `/collab rewrite execution` to rewrite execution records' "$file" 
 # Gate: no prior contribution
 grep -Fq '**ABORT**: no prior contribution to rewrite; use `/collab speak` to create the first contribution.' "$file" || fail "rewrite speak.md: missing no-prior-contribution abort gate"
 
-# Helper-backed location of last contribution
-grep -Fq 'tools/collab/registry.py speak-state <target> <role>' "$file" || fail "rewrite speak.md: missing speak-state helper call for anchor resolution"
+# Helper-backed location of last contribution without turn gating
+grep -Fq 'do not call turn-gating `speak-state` for contribution lookup' "$file" || fail "rewrite speak.md: contribution lookup must avoid speak-state turn gate"
 
 # Active content region extraction — must exclude existing revision history block
 grep -Fq 'up to (but not including) any existing `<details><summary>Revision history</summary>` block' "$file" || fail "rewrite speak.md: missing revision-history exclusion in active-region extraction"

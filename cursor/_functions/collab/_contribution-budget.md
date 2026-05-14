@@ -1,5 +1,18 @@
 # Contribution budget
 
+## Trigger
+
+**Slash:** (reference only — not an invocable route)
+**Prose dispatch:** (reference only — not an invocable route)
+**Search phrases:** collab contribution budget, speak word limit, contribution exemptions
+
+## Steps
+
+1. Read this document when enforcing or changing collab speak contribution length rules.
+2. Do not mutate registry or transcript state from this documentation-only reference.
+
+## Notes
+
 Defines the word-count limit for collab speak contributions and the named exemptions that are excluded from that count. Authoritative for `speak-render` enforcement under items #4 and #9.
 
 ## Word limit

@@ -1,10 +1,25 @@
 # Effort defaults
 
+## Trigger
+
+**Slash:** (reference only — not an invocable route)
+**Prose dispatch:** (reference only — not an invocable route)
+**Search phrases:** collab effort defaults, effort matrix, effort override taxonomy
+
+## Steps
+
+1. Read this document when interpreting collab `EFFORT:` advisories or effort override declarations.
+2. Do not mutate registry or transcript state from this documentation-only reference.
+
+## Notes
+
 This document explains what effort levels mean, how to interpret the phase-role matrix, and how the advisory helper uses it.
 
-**Authoritative source:** [`cursor/_core/agent-effort.json`](agent-effort.json). The table below is a human-readable rendering of that file; if they diverge, the JSON is correct.
+**Authoritative source:** [`_agent-effort.json`](_agent-effort.json). The table below is a human-readable rendering of that file; if they diverge, the JSON is correct.
 
-**Change-motivation convention:** Every change to `agent-effort.json` or to the escalation signal taxonomy in this file must cite the collab, signal, or rationale that motivated the change. This prevents invisible drift and gives reviewers an anchor for "this default is wrong" claims.
+**Cross-document authority:** When this file and [`_agent-model.md`](_agent-model.md) disagree on matrix values, `_agent-model.md` is authoritative. Update this file and `_agent-effort.json` to match `_agent-model.md` when divergence is found.
+
+**Change-motivation convention:** Every change to `_agent-effort.json` or to the escalation signal taxonomy in this file must cite the collab, signal, or rationale that motivated the change. This prevents invisible drift and gives reviewers an anchor for "this default is wrong" claims.
 
 ## Effort levels
 
@@ -26,10 +41,12 @@ This matrix is illustrative. The helper's `EFFORT:` advisory output is the runti
 | Discussion | low | medium | high | high *(optional)* |
 | Conclusion | low | medium | medium | xhigh |
 | Action Plan | low | medium | high | — |
-| Handoff | low | high | high | — |
+| Handoff | low | high | xhigh | — |
 | Completion | low | high | high | xhigh *(reviewer gate)* |
 
-**`—`** means the role is not on the turn-order roster for that phase by default. Optional admission is available via `reviewerOptionalPhases` in the registry; when admitted, the effort level is `xhigh`.
+**`—`** means the role is not on the turn-order roster for that phase by default. Optional admission is available via `reviewerOptionalPhases` in the registry (defaults to `["Discussion"]`; extended via `/collab set reviewer-optional-phases`); when admitted to a non-Discussion phase, the effort level is `xhigh`. Implemented by `reviewer_optional_phases` in `tools/collab/registry.py`.
+
+Roles that exist in `cursor/_roles/` but are absent from this advisory matrix receive the helper's open-roster fallback: `medium`. This keeps join and speak advisories non-blocking for newly added roles while preserving explicit matrix values for the curated roles.
 
 ## How to use this
 
@@ -58,6 +75,8 @@ The following phase-role combinations require an explicit `EFFORT OVERRIDE: <lev
 
 The override declaration is stored and machine-inspectable for audit (via `audit-closed` and reviewer inspection) but is suppressed from reader-facing rendered prose; readers see the effort signal through the advisory `EFFORT:` output, not inline contribution text.
 
+**Helper symbols:** `MANDATORY_EFFORT_OVERRIDE_TURNS` (`tools/collab/registry.py`, the declared phase-role list), `validate_effort_override` (aborts missing, misplaced, or malformed override lines), `effort_override_metadata_comment` (stores the accepted declaration as a hidden base64 comment in the transcript). `audit-closed` exposes stored override metadata and mandatory-turn coverage for reviewer inspection.
+
 **Post-deadlock Discussion turns** are agent-judged mandatory-declaration triggers: if the Discussion phase reached a deadlock before the current turn, the contributing agent must include an override line. This trigger is not helper-detected; reviewers assess compliance from the transcript.
 
 ## Escalation signal taxonomy
@@ -84,8 +103,13 @@ At the $100 Claude Code tier, declared effort levels are enforceable: `pa` (clau
 
 ## Invariants
 
-**Source-of-truth coupling:** The advisory binds phase-role to effort level, not to model identity or harness configuration. A `claude-opus-4-7` agent and a `claude-sonnet-4-6` agent reading the same `EFFORT:` advisory both interpret the effort level against their own runtime. The matrix does not change when the runtime model changes; a model rotation is not a reason to update `agent-effort.json`.
+**Source-of-truth coupling:** The advisory binds phase-role to effort level, not to model identity or harness configuration. A `claude-opus-4-7` agent and a `claude-sonnet-4-6` agent reading the same `EFFORT:` advisory both interpret the effort level against their own runtime. The matrix does not change when the runtime model changes; a model rotation is not a reason to update `_agent-effort.json`.
 
 **Declaration trust model:** Declared effort is an audit marker, not a runtime-enforced floor. An agent that contributes below the recommended level leaves no trace of the discrepancy. The override line, when present, records the agent's intent at contribution time — comparable to the `agentId` capture in `cursor/_functions/collab/join.md`, which documents this as “an honest-effort marker, comparable to a git commit author. It is not an authentication signal.”
 
 **Selection bias:** The protocol detects opt-in escalation only. The absence of an override line is not evidence that the matrix default was sufficient; an agent that silently follows the matrix when escalation was warranted leaves no trace. Reviewers must not interpret a clean transcript as confirmation that every turn was correctly resourced.
+
+## See also
+
+- [`_agent-model.md`](_agent-model.md) — join-time model, harness, per-phase effort table, and fallback per role
+- [`_agent-lifecycle.md`](_agent-lifecycle.md) — when to run `/compact`, `/effort`, subagents, `/clear`, and `/exit`

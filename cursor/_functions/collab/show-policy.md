@@ -33,11 +33,11 @@ Document the gate policy that decides when a collaboration needs a reviewer judg
 
 ## Provenance
 
-`Audit` phase citations supplied by the moderator must be durable references accessible from the repository:
+`Audit` phase citations supplied by the moderator are live-session references:
 
 - Prefer repo-relative paths checked into the repository.
-- When an external document is required, copy it to `.collabs/inputs/<filename>` before the collab opens and cite that path.
-- Transient local paths (e.g., `~/Downloads/`) are not durable references. They are valid as working context during a live session but must not be the sole citation in the audit record, because they will be unresolvable from any other machine or after the file is moved.
+- When an external document is required, cite the source during the live session and summarize the durable facts needed for the audit record.
+- Transient local paths (e.g., `~/Downloads/`) are not durable references. They are valid as working context during a live session but must not be retained as citations in the audit record, because they will be unresolvable from any other machine or after the file is moved.
 
 ## Drift
 

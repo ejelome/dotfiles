@@ -48,7 +48,6 @@ Safe lifecycle patterns for managing context across collab sessions:
 - [~/.cursor/rules/shared.mdc](rules/shared.mdc)
 - [~/.cursor/commands/commands.md](commands/commands.md)
 - [~/.cursor/_core/agent-role.md](_core/agent-role.md)
-- [~/.cursor/_core/agent-effort.md](_core/agent-effort.md)
 - [~/.cursor/_generated/collab-lifecycle.md](_generated/collab-lifecycle.md)
 - [~/.cursor/_generated/command-reference.md](_generated/command-reference.md)
 - [~/.cursor/_tests/_core.md](_tests/_core.md)

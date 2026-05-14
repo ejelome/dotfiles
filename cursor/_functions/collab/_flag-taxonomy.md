@@ -1,5 +1,18 @@
 # Flag taxonomy
 
+## Trigger
+
+**Slash:** (reference only — not an invocable route)
+**Prose dispatch:** (reference only — not an invocable route)
+**Search phrases:** collab flag taxonomy, flag inventory source, helper enforced flags
+
+## Steps
+
+1. Read this document when changing or displaying collab command flag classifications.
+2. Do not mutate registry or transcript state from this documentation-only reference.
+
+## Notes
+
 Defines the three-class taxonomy for collab command flags. Authoritative for the flag inventory generator under items #7, #11, and #15.
 
 ## Three classes

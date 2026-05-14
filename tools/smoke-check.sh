@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Smoke checks for shell, launcher, Python, git config, and Starship TOML.
 # Fails when macOS metadata files (.DS_Store) are present in the repo tree.
-# Includes adapter-sync checks and Cursor markdown semantics checks.
+# Includes adapter-sync checks and Cursor markdown semantics checks when the
+# repository root is a Cursor config root.
 #
 # Shellcheck (when installed) runs on bash entrypoints: link.sh, this script,
 # tools/check-agent-adapters.sh, tools/check-cursor-roles.sh, tools/check-cursor-content.sh,
@@ -14,7 +15,7 @@
 # Markdownlint (when installed) uses repo-root .markdownlint.json.
 # Launcher lib/*.sh and zshrc are zsh; they are syntax-checked with zsh -n, not shellcheck.
 #
-# Cursor config tree checks use CURSOR_CONFIG_ROOT (default: $ROOT/cursor in this clone).
+# Cursor config tree checks use CURSOR_CONFIG_ROOT (default: $ROOT).
 # Ensures commands/commands.md links every public command under commands/*.md
 # and every private route function under _functions/**/*.md. Ensures roles and rules/
 # exposes only router files and private rule bodies live under _mdc/{auto,shared}/.
@@ -28,9 +29,7 @@
 # collisions with global command/rule router names so app repos consume
 # installed rules/commands without depending on this repo's canon.
 #
-# Optional runtime projection validation runs only when SMOKE_CHECK_RUNTIME=1.
-# In runtime mode, required runtime destinations must exist as copied files or
-# directories matching the expected CURSOR_CONFIG_ROOT sources.
+# Runtime projection validation is not part of dotfiles smoke validation.
 #
 # Usage: ./tools/smoke-check.sh
 #
@@ -40,7 +39,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT/cursor}"
+CURSOR_CONFIG_ROOT_WAS_SET=0
+if [[ -n "${CURSOR_CONFIG_ROOT+x}" ]]; then
+  CURSOR_CONFIG_ROOT_WAS_SET=1
+fi
+CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT}"
 SMOKE_CHECK_RUNTIME="${SMOKE_CHECK_RUNTIME:-0}"
 TMP_PYTHONPYCACHEPREFIX=""
 if [[ -z "${PYTHONPYCACHEPREFIX:-}" ]]; then
@@ -60,11 +63,21 @@ source "$ROOT/tools/lib/cursor-layout.sh"
 # shellcheck source=tools/lib/link-targets.sh
 source "$ROOT/tools/lib/link-targets.sh"
 
-if [[ "${SMOKE_CHECK_FIX_NESTED_MIRRORS:-0}" == "1" ]]; then
+HAS_CURSOR_CONFIG_ROOT=0
+if [[ -d "$CURSOR_CONFIG_ROOT/commands" && -d "$CURSOR_CONFIG_ROOT/_functions" ]]; then
+  HAS_CURSOR_CONFIG_ROOT=1
+elif [[ "$CURSOR_CONFIG_ROOT_WAS_SET" == "1" ]]; then
+  echo "smoke-check: CURSOR_CONFIG_ROOT is not a Cursor config root: $CURSOR_CONFIG_ROOT" >&2
+  exit 1
+fi
+
+if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" && "${SMOKE_CHECK_FIX_NESTED_MIRRORS:-0}" == "1" ]]; then
   echo "smoke-check: fixing nested self-symlink mirrors (SMOKE_CHECK_FIX_NESTED_MIRRORS=1) …"
   cursor_strip_nested_mirrors "$CURSOR_CONFIG_ROOT"
 fi
-cursor_assert_no_nested_mirrors "$CURSOR_CONFIG_ROOT" "smoke-check" || exit 1
+if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" ]]; then
+  cursor_assert_no_nested_mirrors "$CURSOR_CONFIG_ROOT" "smoke-check" || exit 1
+fi
 
 first_ds_store=""
 while IFS= read -r f; do
@@ -83,7 +96,8 @@ die() {
 }
 
 case "$SMOKE_CHECK_RUNTIME" in
-  0|1) ;;
+  0) ;;
+  1) die "SMOKE_CHECK_RUNTIME is no longer supported by dotfiles smoke validation" ;;
   *) die "SMOKE_CHECK_RUNTIME must be 0 or 1 (got: $SMOKE_CHECK_RUNTIME)" ;;
 esac
 
@@ -256,118 +270,123 @@ if command -v starship >/dev/null 2>&1; then
   done
 fi
 
-echo "smoke-check: cursor layout (no rules content) …"
-while IFS='|' read -r source_rel dest_rel source_kind required; do
-  [[ -n "$source_rel" ]] || continue
-  [[ "$required" == "required" ]] || continue
-  source_path="${CURSOR_CONFIG_ROOT}/${source_rel}"
-  if ! link_source_exists "$source_path" "$source_kind"; then
-    die "missing CURSOR_CONFIG_ROOT/${source_rel} ($CURSOR_CONFIG_ROOT)"
-  fi
-done < <(cursor_runtime_link_specs)
+if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" ]]; then
+  echo "smoke-check: cursor layout (no rules content) …"
+  while IFS='|' read -r source_rel dest_rel source_kind required; do
+    [[ -n "$source_rel" ]] || continue
+    [[ "$required" == "required" ]] || continue
+    source_path="${CURSOR_CONFIG_ROOT}/${source_rel}"
+    if ! link_source_exists "$source_path" "$source_kind"; then
+      die "missing CURSOR_CONFIG_ROOT/${source_rel} ($CURSOR_CONFIG_ROOT)"
+    fi
+  done < <(cursor_runtime_link_specs)
 
-if find "${CURSOR_CONFIG_ROOT}/commands" -mindepth 1 -type d | grep -q .; then
-  die "commands/ must contain only public slash .md files; move route bodies to _functions/"
+  if find "${CURSOR_CONFIG_ROOT}/commands" -mindepth 1 -type d | grep -q .; then
+    die "commands/ must contain only public slash .md files; move route bodies to _functions/"
+  fi
+  if find "${CURSOR_CONFIG_ROOT}/rules" -mindepth 1 -type d | grep -q .; then
+    die "rules/ must contain only router .mdc files; move rule bodies to _mdc/"
+  fi
+  while IFS= read -r f; do
+    die "commands/ contains unexpected file; keep only .md routers (found ${f#"${CURSOR_CONFIG_ROOT}"/commands/})"
+  done < <(find "${CURSOR_CONFIG_ROOT}/commands" -maxdepth 1 -type f ! -name '*.md' | sort)
+  while IFS= read -r f; do
+    die "rules/ contains unexpected file; keep only .mdc routers (found ${f#"${CURSOR_CONFIG_ROOT}"/rules/})"
+  done < <(find "${CURSOR_CONFIG_ROOT}/rules" -maxdepth 1 -type f ! -name '*.mdc' | sort)
+  for router in auto.mdc shared.mdc; do
+    [[ -f "${CURSOR_CONFIG_ROOT}/rules/${router}" ]] || die "missing rules router (${router})"
+  done
+  while IFS= read -r f; do
+    base="$(basename "$f")"
+    case "$base" in
+      auto.mdc|shared.mdc) ;;
+      *) die "rules/ contains unexpected file; keep only auto.mdc and shared.mdc (found ${base})" ;;
+    esac
+  done < <(find "${CURSOR_CONFIG_ROOT}/rules" -maxdepth 1 -type f -name '*.mdc' | sort)
+  [[ -d "${CURSOR_CONFIG_ROOT}/_mdc/auto" ]] || die "missing CURSOR_CONFIG_ROOT/_mdc/auto"
+  [[ -d "${CURSOR_CONFIG_ROOT}/_mdc/shared" ]] || die "missing CURSOR_CONFIG_ROOT/_mdc/shared"
+  find "${CURSOR_CONFIG_ROOT}/_mdc/auto" -maxdepth 1 -type f -name '*.mdc' | grep -q . || die "_mdc/auto should contain at least one .mdc"
+  find "${CURSOR_CONFIG_ROOT}/_mdc/shared" -maxdepth 1 -type f -name '*.mdc' | grep -q . || die "_mdc/shared should contain at least one .mdc"
+  for f in "${CURSOR_CONFIG_ROOT}/_mdc/auto/"*.mdc; do
+    [[ -f "$f" ]] || continue
+    rel="${f#"${CURSOR_CONFIG_ROOT}"/_mdc/}"
+    grep -Fq "](../_mdc/${rel})" "${CURSOR_CONFIG_ROOT}/rules/auto.mdc" || die "rules/auto.mdc must link ../_mdc/${rel}"
+  done
+  for f in "${CURSOR_CONFIG_ROOT}/_mdc/shared/"*.mdc; do
+    [[ -f "$f" ]] || continue
+    rel="${f#"${CURSOR_CONFIG_ROOT}"/_mdc/}"
+    grep -Fq "](../_mdc/${rel})" "${CURSOR_CONFIG_ROOT}/rules/shared.mdc" || die "rules/shared.mdc must link ../_mdc/${rel}"
+  done
+  cmds=()
+  while IFS= read -r f; do
+    cmds+=("$f")
+  done < <(find "${CURSOR_CONFIG_ROOT}/commands" -maxdepth 1 -type f -name '*.md' | sort)
+  ((${#cmds[@]} > 0)) || die "CURSOR_CONFIG_ROOT/commands should contain at least one .md"
+  catalog="${CURSOR_CONFIG_ROOT}/commands/commands.md"
+  [[ -f "$catalog" ]] || die "missing commands catalog ($catalog)"
+  for f in "${cmds[@]}"; do
+    rel="${f#"${CURSOR_CONFIG_ROOT}"/commands/}"
+    case "$rel" in
+      commands.md) continue ;;
+    esac
+    if ! grep -Fq "](${rel})" "$catalog"; then
+      die "commands.md must link each playbook; missing ](${rel})"
+    fi
+  done
+  functions=()
+  while IFS= read -r f; do
+    functions+=("$f")
+  done < <(find "${CURSOR_CONFIG_ROOT}/_functions" -type f -name '*.md' | sort)
+  ((${#functions[@]} > 0)) || die "CURSOR_CONFIG_ROOT/_functions should contain at least one .md"
+  for f in "${functions[@]}"; do
+    rel="${f#"${CURSOR_CONFIG_ROOT}"/_functions/}"
+    if ! grep -Fq "](../_functions/${rel})" "$catalog"; then
+      die "commands.md must link each private function; missing ](../_functions/${rel})"
+    fi
+  done
+
+  echo "smoke-check: command catalog sync …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-commands-catalog.sh" --check
+
+  echo "smoke-check: framework boundaries sync …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-framework-boundaries.sh" --check
+
+  echo "smoke-check: role roster sync …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-roles-roster.sh" --check
+
+  echo "smoke-check: role catalog …"
+  "$ROOT/tools/check-cursor-roles.sh" --roles-dir "$CURSOR_CONFIG_ROOT/_roles"
+
+  echo "smoke-check: adapter sync …"
+  "$ROOT/tools/check-agent-adapters.sh"
+
+  echo "smoke-check: cursor content …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-content.sh"
+
+  echo "smoke-check: cursor gates …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-gates.sh"
+
+  echo "smoke-check: cursor flags …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-flags.sh"
+
+  echo "smoke-check: cursor naming …"
+  "$ROOT/tools/check-cursor-naming.py" --root "$ROOT"
+
+  echo "smoke-check: collab floor rules …"
+  "$ROOT/tools/check-collab-floor-rules.py" --root "$ROOT"
+
+  echo "smoke-check: generated collab lifecycle …"
+  "$ROOT/tools/collab/lifecycle-doc.py" --check
+
+  echo "smoke-check: generated command reference …"
+  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/command-reference.py" --check
+else
+  echo "smoke-check: cursor config checks skipped (repo root has no commands/ and _functions/)"
 fi
-if find "${CURSOR_CONFIG_ROOT}/rules" -mindepth 1 -type d | grep -q .; then
-  die "rules/ must contain only router .mdc files; move rule bodies to _mdc/"
+
+if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" ]]; then
+  validate_project_dot_cursor
 fi
-while IFS= read -r f; do
-  die "commands/ contains unexpected file; keep only .md routers (found ${f#"${CURSOR_CONFIG_ROOT}"/commands/})"
-done < <(find "${CURSOR_CONFIG_ROOT}/commands" -maxdepth 1 -type f ! -name '*.md' | sort)
-while IFS= read -r f; do
-  die "rules/ contains unexpected file; keep only .mdc routers (found ${f#"${CURSOR_CONFIG_ROOT}"/rules/})"
-done < <(find "${CURSOR_CONFIG_ROOT}/rules" -maxdepth 1 -type f ! -name '*.mdc' | sort)
-for router in auto.mdc shared.mdc; do
-  [[ -f "${CURSOR_CONFIG_ROOT}/rules/${router}" ]] || die "missing rules router (${router})"
-done
-while IFS= read -r f; do
-  base="$(basename "$f")"
-  case "$base" in
-    auto.mdc|shared.mdc) ;;
-    *) die "rules/ contains unexpected file; keep only auto.mdc and shared.mdc (found ${base})" ;;
-  esac
-done < <(find "${CURSOR_CONFIG_ROOT}/rules" -maxdepth 1 -type f -name '*.mdc' | sort)
-[[ -d "${CURSOR_CONFIG_ROOT}/_mdc/auto" ]] || die "missing CURSOR_CONFIG_ROOT/_mdc/auto"
-[[ -d "${CURSOR_CONFIG_ROOT}/_mdc/shared" ]] || die "missing CURSOR_CONFIG_ROOT/_mdc/shared"
-find "${CURSOR_CONFIG_ROOT}/_mdc/auto" -maxdepth 1 -type f -name '*.mdc' | grep -q . || die "_mdc/auto should contain at least one .mdc"
-find "${CURSOR_CONFIG_ROOT}/_mdc/shared" -maxdepth 1 -type f -name '*.mdc' | grep -q . || die "_mdc/shared should contain at least one .mdc"
-for f in "${CURSOR_CONFIG_ROOT}/_mdc/auto/"*.mdc; do
-  [[ -f "$f" ]] || continue
-  rel="${f#"${CURSOR_CONFIG_ROOT}"/_mdc/}"
-  grep -Fq "](../_mdc/${rel})" "${CURSOR_CONFIG_ROOT}/rules/auto.mdc" || die "rules/auto.mdc must link ../_mdc/${rel}"
-done
-for f in "${CURSOR_CONFIG_ROOT}/_mdc/shared/"*.mdc; do
-  [[ -f "$f" ]] || continue
-  rel="${f#"${CURSOR_CONFIG_ROOT}"/_mdc/}"
-  grep -Fq "](../_mdc/${rel})" "${CURSOR_CONFIG_ROOT}/rules/shared.mdc" || die "rules/shared.mdc must link ../_mdc/${rel}"
-done
-cmds=()
-while IFS= read -r f; do
-  cmds+=("$f")
-done < <(find "${CURSOR_CONFIG_ROOT}/commands" -maxdepth 1 -type f -name '*.md' | sort)
-((${#cmds[@]} > 0)) || die "CURSOR_CONFIG_ROOT/commands should contain at least one .md"
-catalog="${CURSOR_CONFIG_ROOT}/commands/commands.md"
-[[ -f "$catalog" ]] || die "missing commands catalog ($catalog)"
-for f in "${cmds[@]}"; do
-  rel="${f#"${CURSOR_CONFIG_ROOT}"/commands/}"
-  case "$rel" in
-    commands.md) continue ;;
-  esac
-  if ! grep -Fq "](${rel})" "$catalog"; then
-    die "commands.md must link each playbook; missing ](${rel})"
-  fi
-done
-functions=()
-while IFS= read -r f; do
-  functions+=("$f")
-done < <(find "${CURSOR_CONFIG_ROOT}/_functions" -type f -name '*.md' | sort)
-((${#functions[@]} > 0)) || die "CURSOR_CONFIG_ROOT/_functions should contain at least one .md"
-for f in "${functions[@]}"; do
-  rel="${f#"${CURSOR_CONFIG_ROOT}"/_functions/}"
-  if ! grep -Fq "](../_functions/${rel})" "$catalog"; then
-    die "commands.md must link each private function; missing ](../_functions/${rel})"
-  fi
-done
-
-echo "smoke-check: command catalog sync …"
-CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-commands-catalog.sh" --check
-
-echo "smoke-check: framework boundaries sync …"
-CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-framework-boundaries.sh" --check
-
-echo "smoke-check: role roster sync …"
-CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-roles-roster.sh" --check
-
-echo "smoke-check: role catalog …"
-"$ROOT/tools/check-cursor-roles.sh" --roles-dir "$CURSOR_CONFIG_ROOT/_roles"
-
-echo "smoke-check: adapter sync …"
-"$ROOT/tools/check-agent-adapters.sh"
-
-echo "smoke-check: cursor content …"
-CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-content.sh"
-
-echo "smoke-check: cursor gates …"
-CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-gates.sh"
-
-echo "smoke-check: cursor flags …"
-CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-flags.sh"
-
-echo "smoke-check: cursor naming …"
-"$ROOT/tools/check-cursor-naming.py" --root "$ROOT"
-
-echo "smoke-check: collab floor rules …"
-"$ROOT/tools/check-collab-floor-rules.py" --root "$ROOT"
-
-echo "smoke-check: generated collab lifecycle …"
-"$ROOT/tools/collab/lifecycle-doc.py" --check
-
-echo "smoke-check: generated command reference …"
-"$ROOT/tools/cursor/command-reference.py" --check
-
-validate_project_dot_cursor
-validate_runtime_projection
 
 [[ -x "${ROOT}/link.sh" ]] || die "link.sh must be executable"
 [[ -x "${ROOT}/tools/smoke-check.sh" ]] || die "tools/smoke-check.sh must be executable"

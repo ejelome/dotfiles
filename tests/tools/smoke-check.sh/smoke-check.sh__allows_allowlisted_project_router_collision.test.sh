@@ -20,6 +20,7 @@ Project-local command index.
 EOF
 
 output="$({
+  CURSOR_CONFIG_ROOT="$ROOT/cursor" \
   SKIP_TESTS_RUN=1 \
   PYTHONPYCACHEPREFIX="$tmp/pycache" \
   PROJECT_DOT_CURSOR="$project" \

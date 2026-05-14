@@ -15,7 +15,7 @@ SLASH_RE = re.compile(r'^\*\*Slash:\*\*\s+`([^`]+)`\s*$')
 STRICT_NAMESPACES = {'collab', 'doc', 'quality', 'narrative'}
 TOOL_DOMAIN_NAMESPACES = {'git'}
 COMMAND_FILE_EXCEPTIONS = {'commands.md'}
-PRIVATE_FUNCTION_EXCEPTIONS = {'_invariants.md', '_phase-commands.md', '_registry.md', 'init-helper-spec.md'}
+PRIVATE_FUNCTION_EXCEPTIONS = {'init-helper-spec.md'}
 
 
 def die(message: str) -> None:
@@ -83,6 +83,8 @@ def validate_function_slash(root: Path, verbs: set[str], failures: list[str]) ->
     functions = root / 'cursor/_functions'
     for path in sorted(functions.glob('*/*.md')):
         namespace = path.parent.name
+        if path.name.startswith('_'):
+            continue
         if path.name in PRIVATE_FUNCTION_EXCEPTIONS:
             continue
         if not valid_token(path.stem):

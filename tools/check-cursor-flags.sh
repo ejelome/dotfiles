@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT/cursor}"
+CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT}"
 
 die() {
   echo "check-cursor-flags: $*" >&2

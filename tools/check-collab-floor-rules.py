@@ -64,10 +64,9 @@ def numbered_steps(steps_section: str) -> list[str]:
     return steps
 
 
-def has_floor_rule_exemption(notes: str) -> bool:
+def has_sync_contract_exemption(notes: str) -> bool:
     required = (
-        "Floor rule 3 compliance",
-        "temporary exemption",
+        "Sync contract compliance",
         "_core/route-invariant.md",
     )
     return all(token in notes for token in required)
@@ -131,7 +130,7 @@ def has_recovery_path(text: str, notes: str) -> bool:
     return (
         "Recovery path" in notes
         or "helper defect" in text
-        or has_floor_rule_exemption(notes)
+        or has_sync_contract_exemption(notes)
     )
 
 
@@ -190,7 +189,7 @@ def check_route(root: Path, path: Path) -> list[str]:
     if not has_recovery_path(combined, notes):
         errors.append(f"{rel(root, path)}: missing recovery path or structured exemption")
 
-    exempt = has_floor_rule_exemption(notes)
+    exempt = has_sync_contract_exemption(notes)
     mutating_steps = []
     for step in parsed_steps:
         if not MUTATION_RE.search(step) or "tools/collab/registry.py" in step:
@@ -203,7 +202,7 @@ def check_route(root: Path, path: Path) -> list[str]:
         step_numbers = ", ".join(step.split(".", 1)[0] for step in mutating_steps)
         errors.append(
             f"{rel(root, path)}: mutating step(s) lack helper ownership or "
-            f"floor-rule exemption: {step_numbers}"
+            f"sync-contract exemption: {step_numbers}"
         )
 
     errors.extend(check_links(root, path, text))

@@ -54,7 +54,7 @@ valid_route='# /collab init
 - **Post-state resume signal:** Run `tools/collab/registry.py speak-state --resume <target> <role>` before writing.
 - **Execution boundary:** Only write under `.collabs/`.
 - **Recovery path:** Retry after restoring the missing helper-owned projection.
-- **Floor rule 3 compliance:** Step 2 is a prose-rendered write and is a temporary exemption per [`_core/route-invariant.md`](../../_core/route-invariant.md).
+- **Sync contract compliance:** Step 2 is a prose-rendered write declared under [`_core/route-invariant.md`](../../_core/route-invariant.md).
 '
 
 missing_helper_route='# /collab init
@@ -87,7 +87,7 @@ output="$("$ROOT/tools/check-collab-floor-rules.py" --root "$missing_helper_root
 status=$?
 set -e
 [[ $status -ne 0 ]] || fail "check-collab-floor-rules should fail without helper ownership or exemption"
-assert_contains "$output" "mutating step(s) lack helper ownership or floor-rule exemption"
+assert_contains "$output" "mutating step(s) lack helper ownership or sync-contract exemption"
 
 missing_stop_root="$tmp/missing-stop"
 write_route "$missing_stop_root" "cursor/_functions/collab/init.md" "${valid_route/4. Stop after updating registry and transcript./4. Report the update.}"

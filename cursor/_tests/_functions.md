@@ -23,7 +23,16 @@ Private function files under `~/.cursor/_functions/`:
 - `agent/upgrade.md`
 - `collab/archive.md`
 - `collab/close.md`
+- `collab/_agent-effort.md`
+- `collab/_agent-id.md`
+- `collab/_agent-lifecycle.md`
+- `collab/_agent-model.md`
+- `collab/_contribution-budget.md`
+- `collab/_flag-taxonomy.md`
+- `collab/_helper-output.md`
 - `collab/_registry.md`
+- `collab/_role-prohibitions.md`
+- `collab/_moderator-polish.md`
 - `collab/delete.md`
 - `collab/run-plan.md`
 - `collab/rewrite-execution.md`

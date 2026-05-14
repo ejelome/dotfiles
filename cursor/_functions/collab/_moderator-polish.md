@@ -1,5 +1,18 @@
 # Moderator polish
 
+## Trigger
+
+**Slash:** (reference only — not an invocable route)
+**Prose dispatch:** (reference only — not an invocable route)
+**Search phrases:** moderator polish, collab moderator formatting, moderator typo dictionary
+
+## Steps
+
+1. Read this document when applying or changing moderator-role readability formatting.
+2. Do not mutate registry or transcript state from this documentation-only reference.
+
+## Notes
+
 Defines the allowed transformations the helper may apply to moderator-role contribution text and the bounded typo dictionary. Authoritative for helper implementation under items #13 and #14.
 
 ## Opt-out

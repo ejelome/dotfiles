@@ -29,5 +29,5 @@ Remove one participant from the registry roster and transcript metadata when the
 
 ```cursor-arg
 dispatch: (collab remove participant <role>)
-param: name=<role>; required=required; placeholder=<role>; class=literal; source=tools/collab/registry.py roles
+param: name=<role>; required=required; placeholder=<role>; class=dynamic; source=tools/collab/registry.py roles
 ```

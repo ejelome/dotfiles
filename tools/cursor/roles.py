@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 
-DEFAULT_ROLES_DIR = Path('cursor/_roles')
+DEFAULT_CURSOR_ROOT = Path(os.environ.get('CURSOR_CONFIG_ROOT', '.')).expanduser()
+DEFAULT_ROLES_DIR = DEFAULT_CURSOR_ROOT / '_roles'
 
 
 def die(message: str) -> None:
@@ -27,6 +29,12 @@ def validate_role_data(data: dict, expected_key: str, source: str) -> None:
         die(f'{source}: concerns must be a non-empty array')
     if any(not isinstance(item, str) or not item.strip() for item in concerns):
         die(f'{source}: concerns must contain only non-empty strings')
+    prohibitions = data.get('prohibitions')
+    if prohibitions is not None:
+        if not isinstance(prohibitions, list):
+            die(f'{source}: prohibitions must be an array when present')
+        if any(not isinstance(item, str) or not item.strip() for item in prohibitions):
+            die(f'{source}: prohibitions must contain only non-empty strings')
 
 
 def load_role(roles_dir: Path, role: str) -> dict:

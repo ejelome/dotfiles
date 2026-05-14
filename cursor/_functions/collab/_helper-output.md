@@ -1,5 +1,18 @@
 # Helper output
 
+## Trigger
+
+**Slash:** (reference only — not an invocable route)
+**Prose dispatch:** (reference only — not an invocable route)
+**Search phrases:** collab helper output, advisory line ordering, helper exit codes
+
+## Steps
+
+1. Read this document when auditing or changing collab helper output contracts.
+2. Do not mutate registry or transcript state from this documentation-only reference.
+
+## Notes
+
 Defines the required output lines per collab helper command, advisory line ordering, and exit-code semantics. Authoritative for pe audits under item #5.
 
 ## Exit codes

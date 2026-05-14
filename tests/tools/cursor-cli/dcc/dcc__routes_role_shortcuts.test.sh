@@ -46,7 +46,7 @@ while IFS='|' read -r shortcut binary model agent_id flag effort_arg service_tie
     assert_contains "$output" "args=$flag $model --sandbox workspace-write"
   fi
 done <<'CASES'
-mod|codex|gpt-5.4-mini|gpt-5.4-mini|-m|low|fast
+mod|codex|gpt-5.3-codex-spark|gpt-5.3-codex-spark|-m|low|fast
 tw|claude|claude-sonnet-4-6|claude-sonnet-4-6|--model|medium|
 pa|claude|claude-opus-4-7|claude-opus-4-7|--model|xhigh|
 pe|codex|gpt-5.5|gpt-5.5|-m|medium|fast
