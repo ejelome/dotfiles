@@ -12,14 +12,12 @@ cleanup() {
 trap cleanup EXIT
 
 home="$tmp/home"
-mkdir -p "$home/.cursor/rules"
+mkdir -p "$home"
 
 printf 'local zshrc\n' >"$home/.zshrc"
 printf 'local gitconfig\n' >"$home/.gitconfig"
-printf 'old rules dir\n' >"$home/.cursor/rules/local.txt"
 
 HOME="$home" \
-CURSOR_CONFIG_ROOT="$ROOT/cursor" \
 SKIP_CURSOR_INSTALL=1 \
 SKIP_CURSOR_LAUNCHER=1 \
 INSTALL_ZSH_PLUGINS=0 \
@@ -27,12 +25,9 @@ INSTALL_ZSH_PLUGINS=0 \
 
 assert_exists "$home/.zshrc.bak"
 assert_exists "$home/.gitconfig.bak"
-assert_not_exists "$home/.cursor/rules.bak"
 
 assert_symlink_points_to "$home/.zshrc" "$ROOT/zshrc"
 assert_symlink_points_to "$home/.gitconfig" "$ROOT/gitconfig"
-assert_copy_matches "$home/.cursor/rules" "$ROOT/cursor/rules"
-assert_not_exists "$home/.cursor/rules/local.txt"
 
 zshrc_bak="$(cat "$home/.zshrc.bak")"
 gitconfig_bak="$(cat "$home/.gitconfig.bak")"
