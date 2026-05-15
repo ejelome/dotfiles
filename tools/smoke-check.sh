@@ -1,35 +1,16 @@
 #!/usr/bin/env bash
 # Smoke checks for shell, launcher, Python, git config, and Starship TOML.
 # Fails when macOS metadata files (.DS_Store) are present in the repo tree.
-# Includes adapter-sync checks and Cursor markdown semantics checks when the
-# repository root is a Cursor config root.
 #
 # Shellcheck (when installed) runs on bash entrypoints: link.sh, this script,
-# tools/check-agent-adapters.sh, tools/check-cursor-roles.sh, tools/check-cursor-content.sh,
-# tools/check-cursor-gates.sh, tools/check-cursor-flags.sh, tools/check-cursor-naming.py,
-# tools/check-collab-floor-rules.py,
-# tools/cursor/command-reference.py, tools/cursor/sync-commands-catalog.sh, tools/cursor/sync-framework-boundaries.sh,
-# tools/cursor/sync-roles-roster.sh,
+# tools/check-agent-adapters.sh,
 # tools/manual/manual-link-fallback.sh,
 # tools/cursor-cli/clear-chat.sh, tools/cursor-cli/factory-reset.sh.
 # Markdownlint (when installed) uses repo-root .markdownlint.json.
 # Launcher lib/*.sh and zshrc are zsh; they are syntax-checked with zsh -n, not shellcheck.
 #
-# Cursor config tree checks use CURSOR_CONFIG_ROOT (default: $ROOT).
-# Ensures commands/commands.md links every public command under commands/*.md
-# and every private route function under _functions/**/*.md. Ensures roles and rules/
-# exposes only router files and private rule bodies live under _mdc/{auto,shared}/.
-# Nested-mirror paths are absent. skills-cursor/ is managed by Cursor itself and
-# is not tracked in this repo.
-# By default this script is read-only; set SMOKE_CHECK_FIX_NESTED_MIRRORS=1 to
-# remove known self-symlink nested mirrors before validation.
-#
-# Optional project-local .cursor validation runs only when PROJECT_DOT_CURSOR is
-# set to an absolute path. That guard rejects authoring-core references and
-# collisions with global command/rule router names so app repos consume
-# installed rules/commands without depending on this repo's canon.
-#
-# Runtime projection validation is not part of dotfiles smoke validation.
+# Cursor runtime validation is intentionally outside this repository. This
+# repository owns only Cursor User settings under cursor/.
 #
 # Usage: ./tools/smoke-check.sh
 #
@@ -39,12 +20,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-CURSOR_CONFIG_ROOT_WAS_SET=0
-if [[ -n "${CURSOR_CONFIG_ROOT+x}" ]]; then
-  CURSOR_CONFIG_ROOT_WAS_SET=1
-fi
-CURSOR_CONFIG_ROOT="${CURSOR_CONFIG_ROOT:-$ROOT}"
-SMOKE_CHECK_RUNTIME="${SMOKE_CHECK_RUNTIME:-0}"
 TMP_PYTHONPYCACHEPREFIX=""
 if [[ -z "${PYTHONPYCACHEPREFIX:-}" ]]; then
   TMP_PYTHONPYCACHEPREFIX="$(mktemp -d /tmp/smoke-check-pycache-XXXXXX)"
@@ -58,26 +33,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# shellcheck source=tools/lib/cursor-layout.sh
-source "$ROOT/tools/lib/cursor-layout.sh"
 # shellcheck source=tools/lib/link-targets.sh
 source "$ROOT/tools/lib/link-targets.sh"
-
-HAS_CURSOR_CONFIG_ROOT=0
-if [[ -d "$CURSOR_CONFIG_ROOT/commands" && -d "$CURSOR_CONFIG_ROOT/_functions" ]]; then
-  HAS_CURSOR_CONFIG_ROOT=1
-elif [[ "$CURSOR_CONFIG_ROOT_WAS_SET" == "1" ]]; then
-  echo "smoke-check: CURSOR_CONFIG_ROOT is not a Cursor config root: $CURSOR_CONFIG_ROOT" >&2
-  exit 1
-fi
-
-if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" && "${SMOKE_CHECK_FIX_NESTED_MIRRORS:-0}" == "1" ]]; then
-  echo "smoke-check: fixing nested self-symlink mirrors (SMOKE_CHECK_FIX_NESTED_MIRRORS=1) …"
-  cursor_strip_nested_mirrors "$CURSOR_CONFIG_ROOT"
-fi
-if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" ]]; then
-  cursor_assert_no_nested_mirrors "$CURSOR_CONFIG_ROOT" "smoke-check" || exit 1
-fi
 
 first_ds_store=""
 while IFS= read -r f; do
@@ -95,130 +52,38 @@ die() {
   exit 1
 }
 
-case "$SMOKE_CHECK_RUNTIME" in
-  0) ;;
-  1) die "SMOKE_CHECK_RUNTIME is no longer supported by dotfiles smoke validation" ;;
-  *) die "SMOKE_CHECK_RUNTIME must be 0 or 1 (got: $SMOKE_CHECK_RUNTIME)" ;;
-esac
+validate_cursor_ownership() {
+  local tracked bad_path
 
-project_overlay_collision_is_allowlisted() {
-  local rel_path="$1"
-  case "$rel_path" in
-    commands/commands.md) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-validate_project_overlay_router_collisions() {
-  local project="$1"
-  local router_dir="$2"
-  local glob="$3"
-  local singular="${router_dir%?}"
-  local overlay_dir="$project/$router_dir"
-  local source_dir="$CURSOR_CONFIG_ROOT/$router_dir"
-  local path base rel
-
-  [[ -d "$overlay_dir" ]] || return 0
-
-  while IFS= read -r path; do
-    base="$(basename "$path")"
-    rel="${router_dir}/${base}"
-    [[ -f "${source_dir}/${base}" ]] || continue
-
-    if project_overlay_collision_is_allowlisted "$rel"; then
-      continue
-    fi
-
-    die "PROJECT_DOT_CURSOR must not override global ${singular} router: ${rel}"
-  done < <(find "$overlay_dir" -maxdepth 1 -type f -name "$glob" | sort)
-}
-
-validate_project_dot_cursor() {
-  local project="${PROJECT_DOT_CURSOR:-}" bad_file
-  [[ -n "$project" ]] || return 0
-
-  case "$project" in
-    /*) ;;
-    *) die "PROJECT_DOT_CURSOR must be an absolute path: $project" ;;
-  esac
-
-  [[ -d "$project" ]] || die "PROJECT_DOT_CURSOR directory does not exist: $project"
-  [[ ! -e "$project/_core" ]] || die "PROJECT_DOT_CURSOR must not contain _core/ ($project/_core)"
-  [[ ! -e "$project/core" ]] || die "PROJECT_DOT_CURSOR must not contain old core/ ($project/core)"
-
-  echo "smoke-check: project .cursor guard ($project) …"
-  bad_file=""
-  while IFS= read -r -d '' f; do
-    if LC_ALL=C grep -Eq '(\.\./_?core/|cursor/_?core|~/.cursor/_?core|@cursor/_?core)' "$f"; then
-      bad_file="$f"
-      break
-    fi
-  done < <(find "$project" -type f \( -name '*.md' -o -name '*.mdc' -o -name '*.json' \) -print0)
-
-  [[ -z "$bad_file" ]] || die "PROJECT_DOT_CURSOR must not reference authoring core: ${bad_file#"$project"/}"
-  validate_project_overlay_router_collisions "$project" "commands" "*.md"
-  validate_project_overlay_router_collisions "$project" "rules" "*.mdc"
-}
-
-validate_runtime_projection() {
-  local source_rel dest_rel source_kind required expected actual
-  local cursor_user_dir dest_name
-
-  [[ "$SMOKE_CHECK_RUNTIME" == "1" ]] || return 0
-
-  echo "smoke-check: runtime projection (SMOKE_CHECK_RUNTIME=1) …"
-
-  while IFS='|' read -r source_rel dest_rel source_kind required; do
-    [[ -n "$source_rel" ]] || continue
-    expected="${CURSOR_CONFIG_ROOT}/${source_rel}"
-    actual="${HOME}/${dest_rel}"
-
-    if [[ ! -e "$actual" ]]; then
-      [[ "$required" == "optional" ]] && continue
-      die "runtime projection missing destination: ${actual} (expected -> ${expected})"
-    fi
-    [[ ! -L "$actual" ]] || die "runtime projection expects copied path, not symlink: ${actual}"
-    case "$source_kind" in
-      dir)
-        [[ -d "$actual" ]] || die "runtime projection expects directory at ${actual}"
-        diff -qr "$expected" "$actual" >/dev/null || die "runtime projection differs at ${actual}: expected copy of ${expected}"
+  echo "smoke-check: cursor ownership guard …"
+  while IFS= read -r tracked; do
+    case "$tracked" in
+      cursor/settings.json|cursor/keybindings.json) ;;
+      cursor/*)
+        die "cursor/ may contain only settings.json and keybindings.json (found ${tracked})"
         ;;
-      file)
-        [[ -f "$actual" ]] || die "runtime projection expects file at ${actual}"
-        cmp -s "$expected" "$actual" || die "runtime projection differs at ${actual}: expected copy of ${expected}"
+      tools/cursor/*|tools/collab/*|tools/check-cursor-*.sh|tools/check-cursor-*.py)
+        die "Cursor runtime tooling belongs in dotcursor, not dotfiles (found ${tracked})"
         ;;
-      *)
-        die "unknown runtime source kind: ${source_kind}"
+      tests/cursor/*|tests/tools/cursor/*|tests/tools/collab/*)
+        die "Cursor runtime tests belong in dotcursor, not dotfiles (found ${tracked})"
         ;;
     esac
-  done < <(cursor_runtime_link_specs)
+  done < <(git ls-files)
 
-  cursor_user_dir="$(cursor_user_dir_for_home "$HOME" "$OSTYPE" "${XDG_CONFIG_HOME:-}")"
-  while IFS='|' read -r source_rel dest_name source_kind required; do
-    [[ -n "$source_rel" ]] || continue
-    expected="${CURSOR_CONFIG_ROOT}/${source_rel}"
-    actual="${cursor_user_dir}/${dest_name}"
-
-    if [[ ! -e "$actual" ]]; then
-      [[ "$required" == "optional" ]] && continue
-      die "runtime projection missing destination: ${actual} (expected -> ${expected})"
-    fi
-    [[ -L "$actual" ]] || die "runtime projection expects symlink at ${actual}"
-    [[ "$(readlink "$actual")" == "$expected" ]] || die "runtime projection mismatch at ${actual}: expected ${expected}"
-  done < <(cursor_user_settings_link_specs)
+  bad_path=""
+  # shellcheck disable=SC2016
+  if LC_ALL=C grep -En '(\$HOME/\.cursor|~/\.cursor|[[:space:]"'\'']\.cursor/|cp[[:space:]].*\.cursor|rsync[[:space:]].*\.cursor)' "$ROOT/link.sh" >/tmp/smoke-check-link-cursor-refs.txt; then
+    bad_path="$(head -n 1 /tmp/smoke-check-link-cursor-refs.txt)"
+  fi
+  rm -f /tmp/smoke-check-link-cursor-refs.txt
+  [[ -z "$bad_path" ]] || die "link.sh must not write/copy/sync into ~/.cursor (${bad_path})"
 }
 
 echo "smoke-check: bash -n …"
 bash -n "${ROOT}/link.sh"
 bash -n "${ROOT}/tools/smoke-check.sh"
 bash -n "${ROOT}/tools/check-agent-adapters.sh"
-bash -n "${ROOT}/tools/check-cursor-roles.sh"
-bash -n "${ROOT}/tools/check-cursor-content.sh"
-bash -n "${ROOT}/tools/check-cursor-gates.sh"
-bash -n "${ROOT}/tools/check-cursor-flags.sh"
-bash -n "${ROOT}/tools/cursor/sync-commands-catalog.sh"
-bash -n "${ROOT}/tools/cursor/sync-framework-boundaries.sh"
-bash -n "${ROOT}/tools/cursor/sync-roles-roster.sh"
 bash -n "${ROOT}/tools/manual/manual-link-fallback.sh"
 bash -n "${ROOT}/tools/cursor-cli/dcc"
 bash -n "${ROOT}/tools/cursor-cli/clear-chat.sh"
@@ -238,12 +103,6 @@ zsh -n "${ROOT}/zshrc"
 
 echo "smoke-check: python …"
 python3 -m py_compile "${ROOT}/launcher/lib/dock_update.py"
-python3 -m py_compile "${ROOT}/tools/cursor/command-reference.py"
-python3 -m py_compile "${ROOT}/tools/cursor/roles.py"
-python3 -m py_compile "${ROOT}/tools/collab/registry.py"
-python3 -m py_compile "${ROOT}/tools/collab/lifecycle-doc.py"
-python3 -m py_compile "${ROOT}/tools/check-collab-floor-rules.py"
-python3 -m py_compile "${ROOT}/tools/check-cursor-naming.py"
 python3 -m py_compile "${ROOT}/tools/narrative/state.py"
 
 echo "smoke-check: gitconfig …"
@@ -270,138 +129,11 @@ if command -v starship >/dev/null 2>&1; then
   done
 fi
 
-if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" ]]; then
-  echo "smoke-check: cursor layout (no rules content) …"
-  while IFS='|' read -r source_rel dest_rel source_kind required; do
-    [[ -n "$source_rel" ]] || continue
-    [[ "$required" == "required" ]] || continue
-    source_path="${CURSOR_CONFIG_ROOT}/${source_rel}"
-    if ! link_source_exists "$source_path" "$source_kind"; then
-      die "missing CURSOR_CONFIG_ROOT/${source_rel} ($CURSOR_CONFIG_ROOT)"
-    fi
-  done < <(cursor_runtime_link_specs)
-
-  if find "${CURSOR_CONFIG_ROOT}/commands" -mindepth 1 -type d | grep -q .; then
-    die "commands/ must contain only public slash .md files; move route bodies to _functions/"
-  fi
-  if find "${CURSOR_CONFIG_ROOT}/rules" -mindepth 1 -type d | grep -q .; then
-    die "rules/ must contain only router .mdc files; move rule bodies to _mdc/"
-  fi
-  while IFS= read -r f; do
-    die "commands/ contains unexpected file; keep only .md routers (found ${f#"${CURSOR_CONFIG_ROOT}"/commands/})"
-  done < <(find "${CURSOR_CONFIG_ROOT}/commands" -maxdepth 1 -type f ! -name '*.md' | sort)
-  while IFS= read -r f; do
-    die "rules/ contains unexpected file; keep only .mdc routers (found ${f#"${CURSOR_CONFIG_ROOT}"/rules/})"
-  done < <(find "${CURSOR_CONFIG_ROOT}/rules" -maxdepth 1 -type f ! -name '*.mdc' | sort)
-  for router in auto.mdc shared.mdc; do
-    [[ -f "${CURSOR_CONFIG_ROOT}/rules/${router}" ]] || die "missing rules router (${router})"
-  done
-  while IFS= read -r f; do
-    base="$(basename "$f")"
-    case "$base" in
-      auto.mdc|shared.mdc) ;;
-      *) die "rules/ contains unexpected file; keep only auto.mdc and shared.mdc (found ${base})" ;;
-    esac
-  done < <(find "${CURSOR_CONFIG_ROOT}/rules" -maxdepth 1 -type f -name '*.mdc' | sort)
-  [[ -d "${CURSOR_CONFIG_ROOT}/_mdc/auto" ]] || die "missing CURSOR_CONFIG_ROOT/_mdc/auto"
-  [[ -d "${CURSOR_CONFIG_ROOT}/_mdc/shared" ]] || die "missing CURSOR_CONFIG_ROOT/_mdc/shared"
-  find "${CURSOR_CONFIG_ROOT}/_mdc/auto" -maxdepth 1 -type f -name '*.mdc' | grep -q . || die "_mdc/auto should contain at least one .mdc"
-  find "${CURSOR_CONFIG_ROOT}/_mdc/shared" -maxdepth 1 -type f -name '*.mdc' | grep -q . || die "_mdc/shared should contain at least one .mdc"
-  for f in "${CURSOR_CONFIG_ROOT}/_mdc/auto/"*.mdc; do
-    [[ -f "$f" ]] || continue
-    rel="${f#"${CURSOR_CONFIG_ROOT}"/_mdc/}"
-    grep -Fq "](../_mdc/${rel})" "${CURSOR_CONFIG_ROOT}/rules/auto.mdc" || die "rules/auto.mdc must link ../_mdc/${rel}"
-  done
-  for f in "${CURSOR_CONFIG_ROOT}/_mdc/shared/"*.mdc; do
-    [[ -f "$f" ]] || continue
-    rel="${f#"${CURSOR_CONFIG_ROOT}"/_mdc/}"
-    grep -Fq "](../_mdc/${rel})" "${CURSOR_CONFIG_ROOT}/rules/shared.mdc" || die "rules/shared.mdc must link ../_mdc/${rel}"
-  done
-  cmds=()
-  while IFS= read -r f; do
-    cmds+=("$f")
-  done < <(find "${CURSOR_CONFIG_ROOT}/commands" -maxdepth 1 -type f -name '*.md' | sort)
-  ((${#cmds[@]} > 0)) || die "CURSOR_CONFIG_ROOT/commands should contain at least one .md"
-  catalog="${CURSOR_CONFIG_ROOT}/commands/commands.md"
-  [[ -f "$catalog" ]] || die "missing commands catalog ($catalog)"
-  for f in "${cmds[@]}"; do
-    rel="${f#"${CURSOR_CONFIG_ROOT}"/commands/}"
-    case "$rel" in
-      commands.md) continue ;;
-    esac
-    if ! grep -Fq "](${rel})" "$catalog"; then
-      die "commands.md must link each playbook; missing ](${rel})"
-    fi
-  done
-  functions=()
-  while IFS= read -r f; do
-    functions+=("$f")
-  done < <(find "${CURSOR_CONFIG_ROOT}/_functions" -type f -name '*.md' | sort)
-  ((${#functions[@]} > 0)) || die "CURSOR_CONFIG_ROOT/_functions should contain at least one .md"
-  for f in "${functions[@]}"; do
-    rel="${f#"${CURSOR_CONFIG_ROOT}"/_functions/}"
-    if ! grep -Fq "](../_functions/${rel})" "$catalog"; then
-      die "commands.md must link each private function; missing ](../_functions/${rel})"
-    fi
-  done
-
-  echo "smoke-check: command catalog sync …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-commands-catalog.sh" --check
-
-  echo "smoke-check: framework boundaries sync …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-framework-boundaries.sh" --check
-
-  echo "smoke-check: role roster sync …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/sync-roles-roster.sh" --check
-
-  echo "smoke-check: role catalog …"
-  "$ROOT/tools/check-cursor-roles.sh" --roles-dir "$CURSOR_CONFIG_ROOT/_roles"
-
-  echo "smoke-check: adapter sync …"
-  "$ROOT/tools/check-agent-adapters.sh"
-
-  echo "smoke-check: cursor content …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-content.sh"
-
-  echo "smoke-check: cursor gates …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-gates.sh"
-
-  echo "smoke-check: cursor flags …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/check-cursor-flags.sh"
-
-  echo "smoke-check: cursor naming …"
-  "$ROOT/tools/check-cursor-naming.py" --root "$ROOT"
-
-  echo "smoke-check: collab floor rules …"
-  "$ROOT/tools/check-collab-floor-rules.py" --root "$ROOT"
-
-  echo "smoke-check: generated collab lifecycle …"
-  "$ROOT/tools/collab/lifecycle-doc.py" --check
-
-  echo "smoke-check: generated command reference …"
-  CURSOR_CONFIG_ROOT="$CURSOR_CONFIG_ROOT" "$ROOT/tools/cursor/command-reference.py" --check
-else
-  echo "smoke-check: cursor config checks skipped (repo root has no commands/ and _functions/)"
-fi
-
-if [[ "$HAS_CURSOR_CONFIG_ROOT" == "1" ]]; then
-  validate_project_dot_cursor
-fi
+validate_cursor_ownership
 
 [[ -x "${ROOT}/link.sh" ]] || die "link.sh must be executable"
 [[ -x "${ROOT}/tools/smoke-check.sh" ]] || die "tools/smoke-check.sh must be executable"
 [[ -x "${ROOT}/tools/check-agent-adapters.sh" ]] || die "tools/check-agent-adapters.sh must be executable"
-[[ -x "${ROOT}/tools/check-cursor-roles.sh" ]] || die "tools/check-cursor-roles.sh must be executable"
-[[ -x "${ROOT}/tools/check-cursor-content.sh" ]] || die "tools/check-cursor-content.sh must be executable"
-[[ -x "${ROOT}/tools/check-cursor-gates.sh" ]] || die "tools/check-cursor-gates.sh must be executable"
-[[ -x "${ROOT}/tools/check-cursor-flags.sh" ]] || die "tools/check-cursor-flags.sh must be executable"
-[[ -x "${ROOT}/tools/check-cursor-naming.py" ]] || die "tools/check-cursor-naming.py must be executable"
-[[ -x "${ROOT}/tools/check-collab-floor-rules.py" ]] || die "tools/check-collab-floor-rules.py must be executable"
-[[ -x "${ROOT}/tools/collab/lifecycle-doc.py" ]] || die "tools/collab/lifecycle-doc.py must be executable"
-[[ -x "${ROOT}/tools/cursor/command-reference.py" ]] || die "tools/cursor/command-reference.py must be executable"
-[[ -x "${ROOT}/tools/cursor/sync-commands-catalog.sh" ]] || die "tools/cursor/sync-commands-catalog.sh must be executable"
-[[ -x "${ROOT}/tools/cursor/sync-framework-boundaries.sh" ]] || die "tools/cursor/sync-framework-boundaries.sh must be executable"
-[[ -x "${ROOT}/tools/cursor/sync-roles-roster.sh" ]] || die "tools/cursor/sync-roles-roster.sh must be executable"
 [[ -x "${ROOT}/tools/manual/manual-link-fallback.sh" ]] || die "tools/manual/manual-link-fallback.sh must be executable"
 [[ -x "${ROOT}/tools/cursor-cli/dcc" ]] || die "tools/cursor-cli/dcc must be executable"
 [[ -x "${ROOT}/launcher/setup-cursor-workspace-launcher.sh" ]] || die "launcher setup must be executable"
@@ -409,10 +141,7 @@ fi
 if command -v shellcheck >/dev/null 2>&1; then
   echo "smoke-check: shellcheck …"
   shellcheck -x "${ROOT}/link.sh" "${ROOT}/tools/smoke-check.sh" \
-    "${ROOT}/tools/check-agent-adapters.sh" "${ROOT}/tools/check-cursor-roles.sh" "${ROOT}/tools/check-cursor-content.sh" \
-    "${ROOT}/tools/check-cursor-gates.sh" "${ROOT}/tools/check-cursor-flags.sh" \
-    "${ROOT}/tools/cursor/sync-commands-catalog.sh" "${ROOT}/tools/cursor/sync-framework-boundaries.sh" \
-    "${ROOT}/tools/cursor/sync-roles-roster.sh" \
+    "${ROOT}/tools/check-agent-adapters.sh" \
     "${ROOT}/tools/manual/manual-link-fallback.sh" \
     "${ROOT}/tools/cursor-cli/dcc" \
     "${ROOT}/tools/cursor-cli/clear-chat.sh" "${ROOT}/tools/cursor-cli/factory-reset.sh"

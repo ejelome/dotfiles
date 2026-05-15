@@ -15,7 +15,7 @@ STAGES = {'audit', 'align', 'gate'}
 RERUN_MODES = {'abort', 'resume', 'replace'}
 ROLE_KEY_RE = re.compile(r'^[a-z][a-z0-9-]*$')
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CURSOR_ROOT = Path(os.environ.get('CURSOR_CONFIG_ROOT', ROOT)).expanduser().resolve()
+DEFAULT_CURSOR_ROOT = Path(os.environ.get('CURSOR_CONFIG_ROOT', '~/.cursor')).expanduser().resolve()
 DEFAULT_ROLES_DIR = DEFAULT_CURSOR_ROOT / '_roles'
 DEFAULT_NARRATIVE_GLOBS = ['**/*.md', '**/*.mdc']
 

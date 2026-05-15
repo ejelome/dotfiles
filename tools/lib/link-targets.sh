@@ -9,25 +9,10 @@ gitconfig|.gitconfig|file|required
 EOF
 }
 
-cursor_runtime_link_specs() {
-  cat <<'EOF'
-rules|.cursor/rules|dir|required
-commands|.cursor/commands|dir|required
-_functions|.cursor/_functions|dir|required
-_mdc|.cursor/_mdc|dir|required
-_core|.cursor/_core|dir|required
-_roles|.cursor/_roles|dir|required
-_generated|.cursor/_generated|dir|required
-_tests|.cursor/_tests|dir|required
-_templates|.cursor/_templates|dir|required
-_CURSOR.md|.cursor/_CURSOR.md|file|required
-EOF
-}
-
 cursor_user_settings_link_specs() {
   cat <<'EOF'
-_settings/settings.json|settings.json|file|optional
-_settings/keybindings.json|keybindings.json|file|optional
+settings.json|settings.json|file|optional
+keybindings.json|keybindings.json|file|optional
 EOF
 }
 

@@ -5,6 +5,22 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-05-15] - 2026-05-15
+
+### Added
+
+- Checks reject runtime state written into the project tree.
+
+### Changed
+
+- Setup guidance covers configuration linking only.
+- The projector and its checks narrow to configuration sources.
+
+### Removed
+
+- The workflow framework and its editor adapters leave the project.
+- Command catalogs, role tooling, and their suites are gone.
+
 ## [2026-05-14] - 2026-05-14
 
 ### Added
@@ -132,7 +148,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.14...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.15...HEAD
+[2026-05-15]: https://github.com/ejelome/dotfiles/compare/v2026.05.14...v2026.05.15
 [2026-05-14]: https://github.com/ejelome/dotfiles/compare/v2026.05.10...v2026.05.14
 [2026-05-10]: https://github.com/ejelome/dotfiles/compare/v2026.05.03...v2026.05.10
 [2026-05-03]: https://github.com/ejelome/dotfiles/compare/v2026.04.26...v2026.05.03

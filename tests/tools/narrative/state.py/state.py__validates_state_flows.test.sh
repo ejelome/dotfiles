@@ -4,7 +4,6 @@ set -euo pipefail
 ROOT="${ROOT:-$(cd "$(dirname "$0")/../../../.." && pwd)}"
 # shellcheck source=tests/helpers/assert.sh
 source "$ROOT/tests/helpers/assert.sh"
-export CURSOR_CONFIG_ROOT="$ROOT/cursor"
 
 tmp="$(mktemp -d)"
 cleanup() {
@@ -17,12 +16,27 @@ runtime="$tmp/runtime-cursor"
 mkdir -p "$repo/cursor/rules" "$repo/project/.cursor/rules" "$runtime/rules"
 printf 'repo rule\n' >"$repo/project/.cursor/rules/local.mdc"
 printf 'runtime rule\n' >"$runtime/rules/auto.mdc"
+roles_dir="$tmp/roles"
+mkdir -p "$roles_dir"
+cat >"$roles_dir/pe.json" <<'JSON'
+{
+  "key": "pe",
+  "displayName": "Platform Engineer",
+  "concerns": [
+    "effectiveness",
+    "efficiency",
+    "completeness",
+    "optimization"
+  ]
+}
+JSON
 
 state="$repo/.revamps/project-2026-04-30.json"
 python3 "$ROOT/tools/narrative/state.py" audit \
   --repo-root "$repo" \
   --date 2026-04-30 \
   --role pe \
+  --roles-dir "$roles_dir" \
   --validation-command "sh tests/run.sh" >/dev/null
 
 python3 "$ROOT/tools/narrative/state.py" validate "$state" >/dev/null
@@ -57,6 +71,7 @@ PY
   --repo-root "$repo" \
   --date 2026-04-30 \
   --role pe \
+  --roles-dir "$roles_dir" \
   --validation-command "sh tests/run.sh" >/dev/null 2>&1 || fail "narrative state: audit must abort on same-day rerun by default"
 
 linked_runtime="$tmp/linked-runtime"
@@ -69,6 +84,7 @@ python3 "$ROOT/tools/narrative/state.py" align \
   --repo-root "$repo" \
   --date 2026-04-30 \
   --role pe \
+  --roles-dir "$roles_dir" \
   --runtime-root "$runtime" \
   --rerun-mode resume >/dev/null
 
@@ -83,7 +99,7 @@ assert "project/.cursor/rules/local.mdc" in data["ruleAlignTargets"]
 assert "~/.cursor/rules/auto.mdc" in data["ruleAlignTargets"]
 PY
 
-gate_output="$(python3 "$ROOT/tools/narrative/state.py" gate --repo-root "$repo" --date 2026-04-30 --role pe --rerun-mode resume)"
+gate_output="$(python3 "$ROOT/tools/narrative/state.py" gate --repo-root "$repo" --date 2026-04-30 --role pe --roles-dir "$roles_dir" --rerun-mode resume)"
 [[ "$gate_output" == "sh tests/run.sh" ]] || fail "narrative state: gate must print validationCommands"
 python3 - "$state" <<'PY' || fail "narrative state: gate must persist active stage"
 import json
