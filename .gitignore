@@ -10,7 +10,6 @@ Thumbs.db
 
 # Local overrides (secrets, machine-specific)
 *.local
-launcher/workspace-launcher.local.sh
 *.secret
 .env
 .env.*
@@ -18,5 +17,5 @@ launcher/workspace-launcher.local.sh
 # Generated macOS app bundles
 *.app
 
-# Local collaboration records are project-session state, not repo source.
-.collabs/
+# Local collaboration record (project-session state, not repo source)
+.collab.json

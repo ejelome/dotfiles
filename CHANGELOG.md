@@ -5,6 +5,18 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-05-30] - 2026-05-30
+
+### Changed
+
+- Setup guidance presents the project as a configuration projector.
+- Linking covers shell, source-control, and theme files.
+
+### Removed
+
+- Launcher assets, icons, and their setup scripts are gone.
+- Workspace tooling, smoke checks, and their suites leave the tree.
+
 ## [2026-05-15] - 2026-05-15
 
 ### Added
@@ -148,7 +160,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.15...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.30...HEAD
+[2026-05-30]: https://github.com/ejelome/dotfiles/compare/v2026.05.15...v2026.05.30
 [2026-05-15]: https://github.com/ejelome/dotfiles/compare/v2026.05.14...v2026.05.15
 [2026-05-14]: https://github.com/ejelome/dotfiles/compare/v2026.05.10...v2026.05.14
 [2026-05-10]: https://github.com/ejelome/dotfiles/compare/v2026.05.03...v2026.05.10
