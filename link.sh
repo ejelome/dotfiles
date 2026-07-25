@@ -54,4 +54,9 @@ if [[ -d "$DOTFILES_ROOT/config" ]]; then
   done
 fi
 
+if git -C "$DOTFILES_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  git -C "$DOTFILES_ROOT" config core.hooksPath .githooks
+  echo "Installed project hooks from .githooks"
+fi
+
 echo "Done. Restart your shell or run: source ~/.zshrc"
