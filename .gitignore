@@ -16,6 +16,3 @@ Thumbs.db
 
 # Generated macOS app bundles
 *.app
-
-# Local collaboration record (project-session state, not repo source)
-.collab.json

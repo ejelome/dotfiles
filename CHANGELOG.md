@@ -5,6 +5,29 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2026-07-25] - 2026-07-25
+
+### Added
+
+- Markdown style rules allow repeated categories across dated entries.
+- A tracked push gate validates calendar records before sharing.
+- Hosted checks repeat the calendar record validation.
+- Calendar metadata carries outcome summaries and exact footprints.
+
+### Changed
+
+- Project documentation focuses on shell and Starship setup.
+- Project guidance covers setup, installation, support, and status.
+- Manual fallback steps mirror backup and linking behavior.
+- Shared source-control settings use a portable global ignore path.
+- Project records link to their corresponding published states.
+- The projector installs the tracked hook path for each checkout.
+- Project guidance lists the maintained validation commands.
+
+### Fixed
+
+- Credential helper entries avoid trailing whitespace.
+
 ## [2026-05-30] - 2026-05-30
 
 ### Changed
@@ -160,7 +183,8 @@ format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Setup guidance covers requirements, installation, and layout.
 
-[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.05.30...HEAD
+[Unreleased]: https://github.com/ejelome/dotfiles/compare/v2026.07.25...HEAD
+[2026-07-25]: https://github.com/ejelome/dotfiles/compare/v2026.05.30...v2026.07.25
 [2026-05-30]: https://github.com/ejelome/dotfiles/compare/v2026.05.15...v2026.05.30
 [2026-05-15]: https://github.com/ejelome/dotfiles/compare/v2026.05.14...v2026.05.15
 [2026-05-14]: https://github.com/ejelome/dotfiles/compare/v2026.05.10...v2026.05.14
